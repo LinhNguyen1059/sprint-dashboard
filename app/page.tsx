@@ -23,7 +23,7 @@ export default function Home() {
       return;
     }
 
-    const proName = file.name.split(".")[0];
+    const proName = file.name.slice(0, -4);
 
     setLoading(true);
     setError(null);
