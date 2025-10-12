@@ -20,6 +20,14 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Chart Colors
+
+This project includes 10 distinct chart colors for data visualization. These colors are defined as CSS variables and are optimized for both light and dark modes:
+
+- `--chart-1` through `--chart-10`
+
+See [Chart Colors Documentation](./lib/CHART_COLORS.md) for detailed usage instructions.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

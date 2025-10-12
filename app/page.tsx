@@ -1,77 +1,27 @@
 "use client";
 
-import Charts from "@/components/Charts";
+import React from "react";
+import { Target } from "lucide-react";
+
 import CSVUpload from "@/components/CSVUpload";
-import DashboardLayout from "@/components/DashboardLayout";
-import MetricsCards from "@/components/MetricsCards";
-import StoryTable from "@/components/StoryTable";
-import TeamPerformance from "@/components/TeamPerformance";
-import { parseCSV, processSprintData } from "@/lib/dataProcessing";
-import { SprintData } from "@/lib/types";
-import { useState } from "react";
 
 export default function Home() {
-  const [sprintData, setSprintData] = useState<SprintData | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [projectName, setProjectName] = useState<string>("");
-
-  const handleFileUpload = async (file: File | null): Promise<void> => {
-    if (!file) {
-      setSprintData(null);
-      setError(null);
-      return;
-    }
-
-    const proName = file.name.slice(0, -4);
-
-    setLoading(true);
-    setError(null);
-    setProjectName(proName);
-
-    document.title = `${proName} | Sprint Dashboard`;
-
-    try {
-      const csvData = await parseCSV(file);
-      const processedData = processSprintData(csvData);
-      setSprintData(processedData);
-    } catch (err) {
-      console.error("Error processing CSV:", err);
-      setError(
-        "Error processing CSV file. Please check the file format and try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <DashboardLayout sprintData={sprintData} projectName={projectName}>
-      {!sprintData ? (
-        <div className="space-y-4">
-          <CSVUpload onFileUpload={handleFileUpload} />
-          {loading && (
-            <div className="text-center py-4">
-              <div className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-800 rounded-lg">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent mr-2"></div>
-                Processing CSV file...
-              </div>
-            </div>
-          )}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-              {error}
-            </div>
-          )}
+    <div className="text-center py-16">
+      <div className="max-w-md mx-auto">
+        <div className="">
+          <Target className="mx-auto h-12 w-12 text-gray-400" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Welcome to Sprint Dashboard
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Upload your CSVs file to start analyzing your team&apos;s sprint
+            progress
+          </p>
+
+          <CSVUpload />
         </div>
-      ) : (
-        <>
-          <MetricsCards sprintData={sprintData} />
-          <Charts sprintData={sprintData} />
-          <TeamPerformance sprintData={sprintData} />
-          <StoryTable sprintData={sprintData} />
-        </>
-      )}
-    </DashboardLayout>
+      </div>
+    </div>
   );
 }
