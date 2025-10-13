@@ -1,19 +1,24 @@
 "use client";
 
 import { useMemo } from "react";
-import { useParams } from "next/navigation";
 import { Pie, PieChart } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Project, Feature, FeatureStatus } from "@/lib/types";
-import { useDashboard } from "../DashboardLayout";
+import { Feature, FeatureStatus } from "@/lib/types";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Button } from "../ui/button";
+import { List } from "lucide-react";
 
 const bugConfig = {
   development: {
@@ -103,25 +108,15 @@ const generateTimeSpentConfig = (features: Feature[]) => {
   return config;
 };
 
-export function ProjectChart() {
-  const { projects } = useDashboard();
-  const params = useParams();
-  const { slug } = params;
+// Legend item component for popover
+const LegendItem = ({ label, color }: { label: string; color: string }) => (
+  <div className="flex items-center gap-2">
+    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+    <span className="text-sm">{label}</span>
+  </div>
+);
 
-  const features = useMemo(() => {
-    if (projects.length === 0 || !slug) {
-      return [];
-    }
-
-    const project = projects.find((p) => p.projectSlug === slug) as Project;
-
-    if (!project || !project.features || project.features.length === 0) {
-      return [];
-    }
-
-    return project.features;
-  }, [projects, slug]);
-
+export function FeatureChart({ data: features }: { data: Feature[] }) {
   // Status chart data
   const dueStatusData = useMemo(() => {
     if (!features || features.length === 0) {
@@ -239,6 +234,30 @@ export function ProjectChart() {
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
           <CardTitle>Project Status</CardTitle>
+          <CardAction>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <List className="h-4 w-4 mr-1" />
+                  View legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="grid gap-2">
+                <LegendItem
+                  label={dueStatusConfig.inprogress.label}
+                  color={dueStatusConfig.inprogress.color}
+                />
+                <LegendItem
+                  label={dueStatusConfig.ontime.label}
+                  color={dueStatusConfig.ontime.color}
+                />
+                <LegendItem
+                  label={dueStatusConfig.late.label}
+                  color={dueStatusConfig.late.color}
+                />
+              </PopoverContent>
+            </Popover>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer
@@ -250,11 +269,7 @@ export function ProjectChart() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={dueStatusData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
+              <Pie data={dueStatusData} label dataKey="value" />
             </PieChart>
           </ChartContainer>
         </CardContent>
@@ -263,6 +278,28 @@ export function ProjectChart() {
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
           <CardTitle>Time spent</CardTitle>
+          <CardAction>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <List className="h-4 w-4 mr-1" />
+                  View legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="grid gap-2 max-h-60 overflow-y-auto"
+              >
+                {Object.entries(dynamicTimeSpentConfig).map(([key, config]) => (
+                  <LegendItem
+                    key={key}
+                    label={config.label}
+                    color={config.color}
+                  />
+                ))}
+              </PopoverContent>
+            </Popover>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer
@@ -274,11 +311,7 @@ export function ProjectChart() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={timeSpentData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
+              <Pie data={timeSpentData} label dataKey="value" />
             </PieChart>
           </ChartContainer>
         </CardContent>
@@ -287,6 +320,26 @@ export function ProjectChart() {
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
           <CardTitle>Bugs</CardTitle>
+          <CardAction>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <List className="h-4 w-4 mr-1" />
+                  View legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="grid gap-2">
+                <LegendItem
+                  label={bugConfig.development.label}
+                  color={bugConfig.development.color}
+                />
+                <LegendItem
+                  label={bugConfig.ncr.label}
+                  color={bugConfig.ncr.color}
+                />
+              </PopoverContent>
+            </Popover>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer config={bugConfig} className="mx-auto max-h-[250px]">
@@ -295,11 +348,7 @@ export function ProjectChart() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={bugsData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
+              <Pie data={bugsData} label dataKey="value" />
             </PieChart>
           </ChartContainer>
         </CardContent>

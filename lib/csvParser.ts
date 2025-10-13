@@ -1,5 +1,12 @@
 import { parse, ParseResult } from "papaparse";
-import { CombinedIssue, Feature, FeatureStatus, Project, Story } from "./types";
+import {
+  CombinedIssue,
+  Feature,
+  FeatureStatus,
+  Project,
+  Solution,
+  Story,
+} from "./types";
 import { formatValueToSlug } from "./utils";
 
 // Define a type for our CSV row data
@@ -165,6 +172,134 @@ function calculateFeatureStatus({
   return FeatureStatus.INPROGRESS;
 }
 
+function processProjectIssues(projectIssues: CombinedIssue[]) {
+  // Group issues by parent task within this project
+  const issuesByParent: Record<number, CombinedIssue[]> = {};
+  projectIssues.forEach((issue) => {
+    const parentId = issue.parentTask;
+    if (parentId) {
+      if (!issuesByParent[parentId]) {
+        issuesByParent[parentId] = [];
+      }
+      issuesByParent[parentId].push(issue);
+    }
+  });
+
+  // Identify features (Epics) within this project
+  const features: Feature[] = projectIssues
+    .filter((issue) => issue.tracker === "Epic")
+    .map((epic) => {
+      return {
+        ...epic,
+        dueStatus: calculateFeatureStatus({
+          closedDate: epic.closed,
+          dueDate: epic.dueDate,
+          status: epic.status,
+        }),
+        slug: formatValueToSlug(epic.subject),
+        urgentBugs: 0,
+        highBugs: 0,
+        normalBugs: 0,
+        ncrBugs: 0,
+        stories: [],
+        others: [],
+      };
+    });
+
+  // Identify stories and other issues within this project
+  const stories: Story[] = projectIssues
+    .filter((issue) => issue.tracker === "Story")
+    .map((story) => {
+      // Get child issues for this story
+      const childIssues = issuesByParent[story.id] || [];
+
+      // Count bugs and NCR issues for this story
+      let urgentCount = 0;
+      let highCount = 0;
+      let normalCount = 0;
+      let ncrCount = 0;
+
+      childIssues.forEach((issue) => {
+        // Check if the issue is a bug with priority "Urgent" or "High"
+        if (issue.tracker === "Bug") {
+          if (issue.priority === "Urgent") {
+            urgentCount += 1;
+          } else if (issue.priority === "High") {
+            highCount += 1;
+          } else if (issue.priority === "Normal") {
+            normalCount += 1;
+          }
+        }
+
+        // Check if the issue has category "NCR"
+        if (issue.issueCategories === "NCR") {
+          ncrCount += 1;
+        }
+      });
+
+      return {
+        ...story,
+        name: story.subject,
+        timeSpent: story.totalSpentTime,
+        parent: story.parentTask || 0,
+        issues: childIssues,
+        urgentBugs: urgentCount,
+        highBugs: highCount,
+        normalBugs: normalCount,
+        ncrBugs: ncrCount,
+      };
+    });
+
+  // Identify "other" tasks that belong to epics but are not stories or epics themselves
+  const otherTasks: CombinedIssue[] = projectIssues.filter((issue) => {
+    return (
+      issue.tracker !== "Epic" &&
+      issue.tracker !== "Story" &&
+      issue.parentTask !== null
+    );
+  });
+
+  // Associate stories with their features and aggregate counts
+  stories.forEach((story) => {
+    const feature = features.find((f) => f.id === story.parent);
+    if (feature) {
+      // Add the story to the feature
+      feature.stories.push(story);
+
+      // Aggregate bug counts from the story to the feature
+      feature.urgentBugs += story.urgentBugs || 0;
+      feature.highBugs += story.highBugs || 0;
+      feature.normalBugs += story.normalBugs || 0;
+      feature.ncrBugs += story.ncrBugs || 0;
+    }
+  });
+
+  // Associate "other" tasks with their features
+  otherTasks.forEach((task) => {
+    const feature = features.find((f) => f.id === task.parentTask);
+    if (feature) {
+      feature.others.push(task);
+
+      if (task.tracker === "Bug") {
+        if (task.priority === "Urgent") {
+          feature.urgentBugs += 1;
+        } else if (task.priority === "High") {
+          feature.highBugs += 1;
+        } else if (task.priority === "Normal") {
+          feature.normalBugs += 1;
+        }
+      }
+
+      // Check if the task has category "NCR"
+      if (task.issueCategories === "NCR") {
+        feature.ncrBugs += 1;
+      }
+    }
+  });
+
+  return { features, stories, otherTasks };
+}
+
 /**
  * Calculate projects from combined issues data
  * @param issues Array of combined issues with project info
@@ -196,101 +331,13 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
     });
     const totalMembers = uniqueAssignees.size;
 
-    // Group issues by parent task within this project
-    const issuesByParent: Record<number, CombinedIssue[]> = {};
-    projectIssues.forEach((issue) => {
-      const parentId = issue.parentTask;
-      if (parentId) {
-        if (!issuesByParent[parentId]) {
-          issuesByParent[parentId] = [];
-        }
-        issuesByParent[parentId].push(issue);
-      }
-    });
-
-    // Identify features (Epics) within this project
-    const features: Feature[] = projectIssues
-      .filter((issue) => issue.tracker === "Epic")
-      .map((epic) => {
-        return {
-          ...epic,
-          dueStatus: calculateFeatureStatus({
-            closedDate: epic.closed,
-            dueDate: epic.dueDate,
-            status: epic.status,
-          }),
-          slug: formatValueToSlug(epic.subject),
-          urgentBugs: 0,
-          highBugs: 0,
-          normalBugs: 0,
-          ncrBugs: 0,
-          stories: [],
-        };
-      });
-
-    // Identify stories and other issues within this project
-    const stories: Story[] = projectIssues
-      .filter((issue) => issue.tracker === "Story")
-      .map((story) => {
-        // Get child issues for this story
-        const childIssues = issuesByParent[story.id] || [];
-
-        // Count bugs and NCR issues for this story
-        let urgentCount = 0;
-        let highCount = 0;
-        let normalCount = 0;
-        let ncrCount = 0;
-
-        childIssues.forEach((issue) => {
-          // Check if the issue is a bug with priority "Urgent" or "High"
-          if (issue.tracker === "Bug") {
-            if (issue.priority === "Urgent") {
-              urgentCount += 1;
-            } else if (issue.priority === "High") {
-              highCount += 1;
-            } else if (issue.priority === "Normal") {
-              normalCount += 1;
-            }
-          }
-
-          // Check if the issue has category "NCR"
-          if (issue.issueCategories === "NCR") {
-            ncrCount += 1;
-          }
-        });
-
-        return {
-          ...story,
-          name: story.subject,
-          timeSpent: story.totalSpentTime,
-          parent: story.parentTask || 0,
-          issues: childIssues,
-          urgentBugs: urgentCount,
-          highBugs: highCount,
-          normalBugs: normalCount,
-          ncrBugs: ncrCount,
-        };
-      });
-
-    // Associate stories with their features and aggregate counts
-    stories.forEach((story) => {
-      const feature = features.find((f) => f.id === story.parent);
-      if (feature) {
-        // Add the story to the feature
-        feature.stories.push(story);
-
-        // Aggregate bug counts from the story to the feature
-        feature.urgentBugs += story.urgentBugs || 0;
-        feature.highBugs += story.highBugs || 0;
-        feature.normalBugs += story.normalBugs || 0;
-        feature.ncrBugs += story.ncrBugs || 0;
-      }
-    });
+    // Process issues to extract features, stories and other tasks
+    const { features } = processProjectIssues(projectIssues);
 
     // Create the project structure
     const project: Project = {
-      projectName: projectName,
-      projectSlug: projectSlug,
+      name: projectName,
+      slug: projectSlug,
       totalItems: projectIssues.length,
       totalMembers: totalMembers,
       features: features,
@@ -300,4 +347,59 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
   }
 
   return projects;
+}
+
+/**
+ * Calculate solutions from combined issues data
+ * @param issues Array of combined issues with project info
+ * @returns Array of solutions grouped by tags
+ */
+export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
+  // Collect all unique tags across all issues
+  const allTags = new Set<string>();
+  issues.forEach((issue) => {
+    issue.tags.forEach((tag) => {
+      if (tag.trim() !== "") {
+        allTags.add(tag.trim());
+      }
+    });
+  });
+
+  // Process all issues to extract features, stories and other tasks
+  const { features: allFeatures } = processProjectIssues(issues);
+
+  // Filter to only include actual features (Epics)
+  const epics = allFeatures.filter((feature) => feature.tracker === "Epic");
+
+  // Process each tag as a solution
+  const solutions: Solution[] = [];
+  allTags.forEach((tagName) => {
+    const tagSlug = formatValueToSlug(tagName);
+
+    // Collect all features that have this tag
+    const taggedFeatures = epics.filter((feature) =>
+      feature.tags.includes(tagName)
+    );
+
+    // Count unique members (assignees) for this solution
+    const uniqueAssignees = new Set<string>();
+    issues.forEach((issue) => {
+      if (issue.assignee && issue.assignee.trim() !== "") {
+        uniqueAssignees.add(issue.assignee.trim());
+      }
+    });
+
+    // Create the solution structure
+    const solution: Solution = {
+      name: tagName,
+      slug: tagSlug,
+      totalItems: issues.length,
+      totalMembers: uniqueAssignees.size,
+      features: taggedFeatures,
+    };
+
+    solutions.push(solution);
+  });
+
+  return solutions;
 }

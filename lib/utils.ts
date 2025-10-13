@@ -80,7 +80,7 @@ export const visibleColumns = {
   files: "Files",
   tags: "Tags",
   doneBy: "Done by",
-  projectName: "Project name",
+  name: "Project name",
   position: "Position",
   issueCategories: "Issue categories",
   private: "Private",
@@ -128,3 +128,5 @@ export const getChartColor = (index: number): string => {
 export const getChartColors = (count: number): string[] => {
   return Array.from({ length: count }, (_, i) => getChartColor(i));
 };
+
+export const bugTrackerUrl = "https://bugtracker.i3international.com/issues";

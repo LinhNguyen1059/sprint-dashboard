@@ -55,26 +55,26 @@ export interface Story extends CombinedIssue {
 
 export interface Feature extends CombinedIssue {
   dueStatus: number;
-  projectSlug: string;
   slug: string;
   urgentBugs: number;
   highBugs: number;
   ncrBugs: number;
   normalBugs: number;
   stories: Story[];
+  others: Issue[];
 }
 
 export interface Project {
-  projectName: string;
-  projectSlug: string;
+  name: string;
+  slug: string;
   totalItems: number;
   totalMembers: number;
   features: Feature[];
 }
 
 export interface Solution {
-  tagName: string;
-  tagSlug: string;
+  name: string;
+  slug: string;
   totalItems: number;
   totalMembers: number;
   features: Feature[];
