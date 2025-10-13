@@ -72,6 +72,14 @@ export interface Project {
   features: Feature[];
 }
 
+export interface Solution {
+  tagName: string;
+  tagSlug: string;
+  totalItems: number;
+  totalMembers: number;
+  features: Feature[];
+}
+
 export enum FeatureStatus {
   INPROGRESS = 0,
   ONTIME = 1,

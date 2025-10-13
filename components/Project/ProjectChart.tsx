@@ -15,25 +15,6 @@ import {
 import { Project, Feature, FeatureStatus } from "@/lib/types";
 import { useDashboard } from "../DashboardLayout";
 
-// Progress chart configuration
-const progressConfig = {
-  done: {
-    key: "done",
-    label: "Done",
-    color: "var(--chart-12)",
-  },
-  inProgress: {
-    key: "inProgress",
-    label: "In Progress",
-    color: "var(--chart-13)",
-  },
-  waiting: {
-    key: "waiting",
-    label: "Waiting",
-    color: "var(--chart-14)",
-  },
-};
-
 const bugConfig = {
   development: {
     key: "development",
@@ -64,14 +45,6 @@ const dueStatusConfig = {
     label: "Late",
     color: "var(--chart-11)",
   },
-};
-
-// Time spent chart configuration
-const timeSpentConfig = {
-  feature: {
-    label: "Feature",
-  },
-  // Colors will be dynamically assigned
 };
 
 // Generate distinct colors for features
@@ -148,59 +121,6 @@ export function ProjectChart() {
 
     return project.features;
   }, [projects, slug]);
-
-  // Progress chart data based on percentDone
-  const progressData = useMemo(() => {
-    if (!features || features.length === 0) {
-      return [
-        {
-          name: progressConfig.done.key,
-          value: 0,
-          fill: progressConfig.done.color,
-        },
-        {
-          name: progressConfig.inProgress.key,
-          value: 0,
-          fill: progressConfig.inProgress.color,
-        },
-        {
-          name: progressConfig.waiting.key,
-          value: 0,
-          fill: progressConfig.waiting.color,
-        },
-      ];
-    }
-
-    const completed = features.filter(
-      (feature) => feature.percentDone === 100
-    ).length;
-
-    const inProgress = features.filter(
-      (feature) => feature.percentDone > 0 && feature.percentDone < 100
-    ).length;
-
-    const notStarted = features.filter(
-      (feature) => feature.percentDone === 0
-    ).length;
-
-    return [
-      {
-        name: progressConfig.done.key,
-        value: completed,
-        fill: progressConfig.done.color,
-      },
-      {
-        name: progressConfig.inProgress.key,
-        value: inProgress,
-        fill: progressConfig.inProgress.color,
-      },
-      {
-        name: progressConfig.waiting.key,
-        value: notStarted,
-        fill: progressConfig.waiting.color,
-      },
-    ];
-  }, [features]);
 
   // Status chart data
   const dueStatusData = useMemo(() => {
@@ -315,34 +235,10 @@ export function ProjectChart() {
   }, [features]);
 
   return (
-    <div className="grid flex-1 scroll-mt-20 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
+    <div className="grid flex-1 scroll-mt-20 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Progress</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          <ChartContainer
-            config={progressConfig}
-            className="mx-auto max-h-[250px]"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <Pie data={progressData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
-            </PieChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="flex flex-col shadow-none">
-        <CardHeader className="items-center pb-0">
-          <CardTitle>Status</CardTitle>
+          <CardTitle>Project Status</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer
