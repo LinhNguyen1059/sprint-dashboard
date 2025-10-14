@@ -2,17 +2,24 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
+import { Bug, Clock, Loader } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDashboard } from "@/components/DashboardLayout";
 import { Progress } from "@/components/ui/progress";
-import { Project } from "@/lib/types";
+import { FeatureStatus, Project } from "@/lib/types";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface ProjectWithMetrics extends Project {
   totalFeatures: number;
   averageFeatureProgress: number;
+  totalDevelopmentBugs: number;
+  totalPostReleaseBugs: number;
+  totalSpentTime: number;
+  isInprogress: boolean;
+  percentOnTime: number;
 }
 
 export default function Projects() {
@@ -22,18 +29,39 @@ export default function Projects() {
   const projectsWithMetrics: ProjectWithMetrics[] = projects.map((project) => {
     const totalFeatures = project.features.length;
     let totalProgress = 0;
+    let totalDevelopmentBugs = 0;
+    let totalPostReleaseBugs = 0;
+    let totalSpentTime = 0;
+    let isInprogress = true;
+    let countOnTime = 0;
 
     project.features.forEach((feature) => {
       totalProgress += feature.percentDone || 0;
+      totalDevelopmentBugs +=
+        feature.urgentBugs + feature.highBugs + feature.normalBugs;
+      totalPostReleaseBugs += feature.ncrBugs;
+      totalSpentTime += feature.totalSpentTime;
+      if (feature.dueStatus !== FeatureStatus.INPROGRESS) {
+        isInprogress = false;
+      }
+      if (feature.dueStatus === FeatureStatus.ONTIME) {
+        countOnTime++;
+      }
     });
 
     const averageFeatureProgress =
       totalFeatures > 0 ? Math.round(totalProgress / totalFeatures) : 0;
+    const percentOnTime = Math.round((countOnTime / totalFeatures) * 100);
 
     return {
       ...project,
       totalFeatures,
       averageFeatureProgress,
+      totalDevelopmentBugs,
+      totalPostReleaseBugs,
+      totalSpentTime,
+      isInprogress,
+      percentOnTime
     };
   });
 
@@ -64,27 +92,79 @@ export default function Projects() {
             href={`/projects/${project.slug}`}
             className="block"
           >
-            <Card className="h-full shadow-none gap-0 hover:shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
+            <Card className="h-full shadow-none gap-0 hover:shadow-sm py-4">
+              <CardHeader className="pb-2 px-4">
+                <div className="flex justify-between items-center">
                   <CardTitle className="text-lg">{project.name}</CardTitle>
-                  <ArrowUpRight />
+                  {project.isInprogress ? (
+                    <Badge
+                      variant="outline"
+                      className="text-muted-foreground px-1.5"
+                    >
+                      <Loader />
+                      In Progress
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "px-1.5",
+                        project.percentOnTime >= 90
+                          ? "text-green-500 border-green-100"
+                          : "text-orange-500 border-orange-100"
+                      )}
+                    >
+                      {project.percentOnTime}% Features On Time
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="">
-                  <div className="flex justify-between">
-                    <span className="">{project.totalFeatures} Features</span>
+              <CardContent className="px-4">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <div className="font-medium">
+                      {project.totalFeatures} Features
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        value={project.averageFeatureProgress}
+                        className="h-2"
+                      />
+                      <span className="font-medium text-sm">
+                        {project.averageFeatureProgress}%
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Progress
-                      value={project.averageFeatureProgress}
-                      className="h-2"
-                    />
-                    <span className="font-medium">
-                      {project.averageFeatureProgress}%
-                    </span>
+                  <div>
+                    <div className="font-medium mb-1">Bugs</div>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge
+                        variant="secondary"
+                        className="text-[var(--chart-1)] bg-[var(--chart-1)]/10"
+                      >
+                        <Bug className="h-4 w-4" />
+                        {project.totalDevelopmentBugs}
+                        <span>Development</span>
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-[var(--chart-5)] bg-[var(--chart-5)]/10"
+                      >
+                        <Bug className="h-4 w-4" />
+                        {project.totalPostReleaseBugs}
+                        <span>Post-Release</span>
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-medium">Spent time</div>
+                    <div className="flex items-center gap-1 font-medium">
+                      <Clock className="h-4 w-4" />
+                      {project.totalSpentTime} hrs
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 mt-2">

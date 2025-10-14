@@ -31,7 +31,7 @@ export default function SolutionDetail() {
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 lg:px-6 px-4">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Features Board</h1>
+        <h1 className="text-2xl font-bold">{solution.name}</h1>
       </div>
 
       <FeatureChart data={solution.features} />

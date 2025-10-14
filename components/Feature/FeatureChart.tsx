@@ -1,36 +1,27 @@
 "use client";
 
 import { useMemo } from "react";
-import { Pie, PieChart } from "recharts";
+import { LabelList, Pie, PieChart } from "recharts";
 
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
+  ChartTooltipContent
 } from "@/components/ui/chart";
 import { Feature, FeatureStatus } from "@/lib/types";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Button } from "../ui/button";
-import { List } from "lucide-react";
 
 const bugConfig = {
   development: {
     key: "development",
     label: "Development",
-    color: "var(--chart-1)",
+    color: "var(--chart-1)"
   },
   ncr: {
     key: "ncr",
-    label: "NCR",
-    color: "var(--chart-2)",
-  },
+    label: "Post-Release",
+    color: "var(--chart-5)"
+  }
 };
 
 // Status chart configuration
@@ -38,18 +29,18 @@ const dueStatusConfig = {
   inprogress: {
     key: "inprogress",
     label: "In Progress",
-    color: "var(--chart-9)",
+    color: "var(--chart-9)"
   },
   ontime: {
     key: "ontime",
     label: "On Time",
-    color: "var(--chart-7)",
+    color: "var(--chart-7)"
   },
   late: {
     key: "late",
     label: "Late",
-    color: "var(--chart-11)",
-  },
+    color: "var(--chart-11)"
+  }
 };
 
 // Generate distinct colors for features
@@ -84,7 +75,7 @@ const generateFeatureColor = (index: number) => {
     "var(--chart-27)",
     "var(--chart-28)",
     "var(--chart-29)",
-    "var(--chart-30)",
+    "var(--chart-30)"
   ];
   return colors[index % colors.length];
 };
@@ -101,7 +92,7 @@ const generateTimeSpentConfig = (features: Feature[]) => {
     const key = feature.subject;
     config[key] = {
       label: feature.subject,
-      color: generateFeatureColor(index),
+      color: generateFeatureColor(index)
     };
   });
 
@@ -124,18 +115,21 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
         {
           name: dueStatusConfig.inprogress.key,
           value: 0,
-          fill: dueStatusConfig.inprogress.color,
+          percent: 0,
+          fill: dueStatusConfig.inprogress.color
         },
         {
           name: dueStatusConfig.ontime.key,
           value: 0,
-          fill: dueStatusConfig.ontime.color,
+          percent: 0,
+          fill: dueStatusConfig.ontime.color
         },
         {
           name: dueStatusConfig.late.key,
           value: 0,
-          fill: dueStatusConfig.late.color,
-        },
+          percent: 0,
+          fill: dueStatusConfig.late.color
+        }
       ];
     }
 
@@ -155,18 +149,21 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
       {
         name: dueStatusConfig.inprogress.key,
         value: inProgressCount,
-        fill: dueStatusConfig.inprogress.color,
+        percent: (inProgressCount / features.length) * 100,
+        fill: dueStatusConfig.inprogress.color
       },
       {
         name: dueStatusConfig.ontime.key,
         value: onTimeCount,
-        fill: dueStatusConfig.ontime.color,
+        percent: (onTimeCount / features.length) * 100,
+        fill: dueStatusConfig.ontime.color
       },
       {
         name: dueStatusConfig.late.key,
         value: lateCount,
-        fill: dueStatusConfig.late.color,
-      },
+        percent: (lateCount / features.length) * 100,
+        fill: dueStatusConfig.late.color
+      }
     ];
   }, [features]);
 
@@ -180,10 +177,16 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
       (feature) => feature.totalSpentTime > 0
     );
 
+    const totalSpentTime = featuresWithTime.reduce(
+      (acc, feature) => acc + feature.totalSpentTime,
+      0
+    );
+
     return featuresWithTime.map((feature, index) => ({
       name: feature.subject,
       value: feature.totalSpentTime,
-      fill: generateFeatureColor(index),
+      percent: (feature.totalSpentTime / totalSpentTime) * 100,
+      fill: generateFeatureColor(index)
     }));
   }, [features]);
 
@@ -199,9 +202,15 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
         {
           name: bugConfig.development.key,
           value: 0,
-          fill: bugConfig.development.color,
+          percent: 0,
+          fill: bugConfig.development.color
         },
-        { name: bugConfig.ncr.key, value: 0, fill: bugConfig.ncr.color },
+        {
+          name: bugConfig.ncr.key,
+          value: 0,
+          percent: 0,
+          fill: bugConfig.ncr.color
+        }
       ];
     }
 
@@ -215,140 +224,131 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
       return sum + feature.ncrBugs;
     }, 0);
 
+    const total = totalDevelopmentBugs + totalNcrBugs;
+
     return [
       {
         name: bugConfig.development.key,
         value: totalDevelopmentBugs,
-        fill: bugConfig.development.color,
+        percent: (totalDevelopmentBugs / total) * 100,
+        fill: bugConfig.development.color
       },
       {
         name: bugConfig.ncr.key,
         value: totalNcrBugs,
-        fill: bugConfig.ncr.color,
-      },
+        percent: (totalNcrBugs / total) * 100,
+        fill: bugConfig.ncr.color
+      }
     ];
   }, [features]);
 
   return (
     <div className="grid flex-1 scroll-mt-20 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <Card className="flex flex-col shadow-none">
-        <CardHeader className="items-center pb-0">
+      <Card className="flex flex-col shadow-none py-4">
+        <CardHeader className="items-center pb-0 px-4">
           <CardTitle>Project Status</CardTitle>
-          <CardAction>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  <List className="h-4 w-4 mr-1" />
-                  View legend
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="grid gap-2">
-                <LegendItem
-                  label={dueStatusConfig.inprogress.label}
-                  color={dueStatusConfig.inprogress.color}
-                />
-                <LegendItem
-                  label={dueStatusConfig.ontime.label}
-                  color={dueStatusConfig.ontime.color}
-                />
-                <LegendItem
-                  label={dueStatusConfig.late.label}
-                  color={dueStatusConfig.late.color}
-                />
-              </PopoverContent>
-            </Popover>
-          </CardAction>
         </CardHeader>
-        <CardContent className="flex-1 pb-0">
+        <CardContent className="flex-1 pb-0 px-4">
           <ChartContainer
             config={dueStatusConfig}
-            className="mx-auto max-h-[250px]"
+            className="mx-auto max-h-[250px] w-full"
           >
             <PieChart>
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={dueStatusData} label dataKey="value" />
+              <Pie
+                data={dueStatusData}
+                label={({ name }: { name: keyof typeof dueStatusConfig }) =>
+                  dueStatusConfig[name].label
+                }
+                dataKey="value"
+              >
+                <LabelList
+                  dataKey="percent"
+                  className="fill-background"
+                  stroke="none"
+                  fontSize={12}
+                  formatter={(percent: number) =>
+                    percent > 0 ? `${percent.toFixed(2)}%` : ""
+                  }
+                />
+              </Pie>
             </PieChart>
           </ChartContainer>
         </CardContent>
       </Card>
 
-      <Card className="flex flex-col shadow-none">
-        <CardHeader className="items-center pb-0">
+      <Card className="flex flex-col shadow-none py-4">
+        <CardHeader className="items-center pb-0 px-4">
           <CardTitle>Time spent</CardTitle>
-          <CardAction>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  <List className="h-4 w-4 mr-1" />
-                  View legend
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="grid gap-2 max-h-60 overflow-y-auto"
-              >
-                {Object.entries(dynamicTimeSpentConfig).map(([key, config]) => (
-                  <LegendItem
-                    key={key}
-                    label={config.label}
-                    color={config.color}
-                  />
-                ))}
-              </PopoverContent>
-            </Popover>
-          </CardAction>
         </CardHeader>
-        <CardContent className="flex-1 pb-0">
+        <CardContent className="flex-1 pb-0 px-4">
           <ChartContainer
             config={dynamicTimeSpentConfig}
-            className="mx-auto max-h-[250px]"
+            className="mx-auto max-h-[250px] w-full"
           >
             <PieChart>
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={timeSpentData} label dataKey="value" />
+              <Pie
+                data={timeSpentData}
+                label={({
+                  name
+                }: {
+                  name: keyof typeof dynamicTimeSpentConfig;
+                }) => dynamicTimeSpentConfig[name].label}
+                dataKey="value"
+              >
+                <LabelList
+                  dataKey="percent"
+                  className="fill-background"
+                  stroke="none"
+                  fontSize={12}
+                  formatter={(percent: number) =>
+                    percent > 0 ? `${percent.toFixed(2)}%` : ""
+                  }
+                />
+              </Pie>
             </PieChart>
           </ChartContainer>
         </CardContent>
       </Card>
 
-      <Card className="flex flex-col shadow-none">
-        <CardHeader className="items-center pb-0">
+      <Card className="flex flex-col shadow-none py-4">
+        <CardHeader className="items-center pb-0 px-4">
           <CardTitle>Bugs</CardTitle>
-          <CardAction>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  <List className="h-4 w-4 mr-1" />
-                  View legend
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="grid gap-2">
-                <LegendItem
-                  label={bugConfig.development.label}
-                  color={bugConfig.development.color}
-                />
-                <LegendItem
-                  label={bugConfig.ncr.label}
-                  color={bugConfig.ncr.color}
-                />
-              </PopoverContent>
-            </Popover>
-          </CardAction>
         </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          <ChartContainer config={bugConfig} className="mx-auto max-h-[250px]">
+        <CardContent className="flex-1 pb-0 px-4">
+          <ChartContainer
+            config={bugConfig}
+            className="mx-auto max-h-[250px] w-full"
+          >
             <PieChart>
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={bugsData} label dataKey="value" />
+              <Pie
+                data={bugsData}
+                label={({ name }: { name: keyof typeof bugConfig }) =>
+                  bugConfig[name].label
+                }
+                dataKey="value"
+              >
+                <LabelList
+                  dataKey="percent"
+                  className="fill-background"
+                  stroke="none"
+                  fontSize={12}
+                  formatter={(percent: number) =>
+                    percent > 0 ? `${percent.toFixed(2)}%` : ""
+                  }
+                />
+              </Pie>
             </PieChart>
           </ChartContainer>
         </CardContent>

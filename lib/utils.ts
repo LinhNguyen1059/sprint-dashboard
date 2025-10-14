@@ -50,7 +50,7 @@ export const visibleColumns = {
   urgentBugs: "Urgent bugs",
   highBugs: "High bugs",
   normalBugs: "Normal bugs",
-  ncrBugs: "NCR bugs",
+  ncrBugs: "Post-Release bugs",
 
   tracker: "Tracker",
   status: "Status",

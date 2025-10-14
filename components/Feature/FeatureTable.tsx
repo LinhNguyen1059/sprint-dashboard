@@ -169,7 +169,7 @@ export function FeatureTable({
         />
       ),
       cell: ({ row }) => (
-        <div className="text-right">{row.original.totalSpentTime}</div>
+        <div className="text-right">{row.original.totalSpentTime} hrs</div>
       ),
     },
     {
@@ -203,7 +203,7 @@ export function FeatureTable({
       header: ({ column }) => (
         <SortableHeader
           column={column}
-          title="NCR bugs"
+          title="Post-Release bugs"
           className="w-full justify-end"
         />
       ),

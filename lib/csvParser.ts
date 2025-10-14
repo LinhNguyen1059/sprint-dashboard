@@ -5,7 +5,7 @@ import {
   FeatureStatus,
   Project,
   Solution,
-  Story,
+  Story
 } from "./types";
 import { formatValueToSlug } from "./utils";
 
@@ -56,7 +56,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               return value === "1";
             }
             return value;
-          },
+          }
         });
 
         // Convert parsed data to our CombinedIssue interface
@@ -109,7 +109,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
             storyPoints: row["Story points"]
               ? parseFloat(row["Story points"])
               : 0,
-            projectSlug: projectSlug,
+            projectSlug: projectSlug
           };
         });
 
@@ -155,7 +155,7 @@ export async function parseMultipleCSVFileObjects(
 function calculateFeatureStatus({
   dueDate,
   closedDate,
-  status,
+  status
 }: {
   dueDate: string;
   closedDate: string;
@@ -167,7 +167,20 @@ function calculateFeatureStatus({
   if (dueDate && closedDate) {
     const due = new Date(dueDate);
     const closed = new Date(closedDate);
+    // Normalize dates to compare only date parts (ignore time)
+    due.setHours(0, 0, 0, 0);
+    closed.setHours(0, 0, 0, 0);
     return closed > due ? FeatureStatus.LATE : FeatureStatus.ONTIME;
+  }
+  if (dueDate) {
+    const today = new Date();
+    const due = new Date(dueDate);
+    // Normalize dates to compare only date parts (ignore time)
+    today.setHours(0, 0, 0, 0);
+    due.setHours(0, 0, 0, 0);
+    if (today > due) {
+      return FeatureStatus.LATE;
+    }
   }
   return FeatureStatus.INPROGRESS;
 }
@@ -194,7 +207,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         dueStatus: calculateFeatureStatus({
           closedDate: epic.closed,
           dueDate: epic.dueDate,
-          status: epic.status,
+          status: epic.status
         }),
         slug: formatValueToSlug(epic.subject),
         urgentBugs: 0,
@@ -202,7 +215,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         normalBugs: 0,
         ncrBugs: 0,
         stories: [],
-        others: [],
+        others: []
       };
     });
 
@@ -246,7 +259,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         urgentBugs: urgentCount,
         highBugs: highCount,
         normalBugs: normalCount,
-        ncrBugs: ncrCount,
+        ncrBugs: ncrCount
       };
     });
 
@@ -340,7 +353,7 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
       slug: projectSlug,
       totalItems: projectIssues.length,
       totalMembers: totalMembers,
-      features: features,
+      features: features
     };
 
     projects.push(project);
@@ -395,7 +408,7 @@ export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
       slug: tagSlug,
       totalItems: issues.length,
       totalMembers: uniqueAssignees.size,
-      features: taggedFeatures,
+      features: taggedFeatures
     };
 
     solutions.push(solution);

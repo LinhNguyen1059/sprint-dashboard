@@ -181,7 +181,7 @@ const columns: ColumnDef<Story>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-right">{row.original.totalSpentTime}</div>
+      <div className="text-right">{row.original.totalSpentTime} hrs</div>
     ),
   },
   {
