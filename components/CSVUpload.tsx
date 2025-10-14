@@ -102,8 +102,6 @@ const CSVUpload: React.FC = () => {
     } catch (error) {
       console.error("Error parsing CSV files:", error);
       alert("Error parsing CSV files. Please check the console for details.");
-    } finally {
-      setLoading(false);
     }
   };
 
