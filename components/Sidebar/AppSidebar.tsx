@@ -22,6 +22,7 @@ import { cn, isRouteActive } from "@/lib/utils";
 import { routes } from "@/lib/routes";
 import { NavProjects } from "./NavProjects";
 import { SiteHeader } from "./SiteHeader";
+import { NavSolutions } from "./NavSolutions";
 
 function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
   const path = usePathname();
@@ -38,7 +39,7 @@ function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="custom-scrollbar">
         <SidebarGroup>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
@@ -64,6 +65,7 @@ function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
           </SidebarGroupContent>
         </SidebarGroup>
         <NavProjects />
+        <NavSolutions />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </SidebarUI>

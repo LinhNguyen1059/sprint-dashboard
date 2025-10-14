@@ -1,20 +1,23 @@
 import { useMemo } from "react";
+import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { routes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
+import { cn, isRouteActive } from "@/lib/utils";
 import { useDashboard } from "../DashboardLayout";
-import Link from "next/link";
 
 export function SiteHeader() {
   const path = usePathname();
   const params = useParams();
   const { slug, feature } = params;
 
-  const { projects } = useDashboard();
+  const { projects, solutions } = useDashboard();
+
+  const isProjectRoute = isRouteActive("/projects", path);
+  const isSolutionRoute = isRouteActive("/solutions", path);
 
   const route = useMemo(() => {
     return routes.find((route) => {
@@ -30,24 +33,52 @@ export function SiteHeader() {
   }, [path]);
 
   const slugName = useMemo(() => {
-    if (projects.length === 0 || !slug) {
-      return null;
+    if (isProjectRoute) {
+      if (projects.length === 0 || !slug) {
+        return null;
+      }
+
+      return projects.find((p) => p.slug === slug)?.name;
     }
 
-    return projects.find((p) => p.projectSlug === slug)?.projectName;
-  }, [projects, slug]);
+    if (isSolutionRoute) {
+      if (solutions.length === 0 || !slug) {
+        return null;
+      }
+
+      return solutions.find((p) => p.slug === slug)?.name;
+    }
+
+    return null;
+  }, [projects, solutions, slug, isProjectRoute, isSolutionRoute]);
 
   const featureName = useMemo(() => {
-    if (projects.length === 0 || !feature || !slug) {
-      return null;
+    if (isProjectRoute) {
+      if (projects.length === 0 || !feature || !slug) {
+        return null;
+      }
+
+      const project = projects.find((p) => p.slug === slug);
+
+      return (
+        project?.features.find((f) => f.slug === feature)?.subject || feature
+      );
     }
 
-    const project = projects.find((p) => p.projectSlug === slug);
+    if (isSolutionRoute) {
+      if (solutions.length === 0 || !feature || !slug) {
+        return null;
+      }
 
-    return (
-      project?.features.find((f) => f.slug === feature)?.subject || feature
-    );
-  }, [projects, feature, slug]);
+      const solution = solutions.find((p) => p.slug === slug);
+
+      return (
+        solution?.features.find((f) => f.slug === feature)?.subject || feature
+      );
+    }
+
+    return null;
+  }, [projects, solutions, feature, slug, isProjectRoute, isSolutionRoute]);
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) sticky top-0 z-20 bg-background">
@@ -70,7 +101,7 @@ export function SiteHeader() {
         {slugName && (
           <>
             <ChevronRight size={14} />
-            <Link href={`/projects/${slug}`}>
+            <Link href={`${route?.url}/${slug}`}>
               <h1
                 className={cn(
                   "text-base font-medium",

@@ -3,18 +3,22 @@
 import React, { createContext, useContext, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { CombinedIssue, DashboardLayoutProps, Project } from "@/lib/types";
+import {
+  CombinedIssue,
+  DashboardLayoutProps,
+  Project,
+  Solution,
+} from "@/lib/types";
 import { AppSidebar } from "./Sidebar/AppSidebar";
+import { useMounted } from "@/hooks/use-mount";
 
 interface DashboardContextType {
   data: CombinedIssue[];
   setData: React.Dispatch<React.SetStateAction<CombinedIssue[]>>;
   projects: Project[];
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  solutions: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setSolutions: React.Dispatch<React.SetStateAction<any[]>>;
+  solutions: Solution[];
+  setSolutions: React.Dispatch<React.SetStateAction<Solution[]>>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -34,8 +38,9 @@ const useDashboard = () => {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [data, setData] = React.useState<CombinedIssue[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [solutions, setSolutions] = React.useState<any[]>([]);
+  const [solutions, setSolutions] = React.useState<Solution[]>([]);
+
+  const mounted = useMounted();
 
   const path = usePathname();
   const router = useRouter();
@@ -49,6 +54,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       router.replace("/");
     }
   }, [data]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <DashboardContext.Provider

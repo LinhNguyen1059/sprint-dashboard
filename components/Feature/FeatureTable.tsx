@@ -45,7 +45,12 @@ import {
 } from "@/components/ui/table";
 import { Feature, FeatureStatus } from "@/lib/types";
 import { Progress } from "../ui/progress";
-import { cn, getFeatureStatus, visibleColumns } from "@/lib/utils";
+import {
+  bugTrackerUrl,
+  cn,
+  getFeatureStatus,
+  visibleColumns,
+} from "@/lib/utils";
 
 // Define a reusable component for sortable headers
 const SortableHeader = ({
@@ -75,117 +80,138 @@ const SortableHeader = ({
   );
 };
 
-// Define columns with clear, readable structure
-const columns: ColumnDef<Feature>[] = [
-  {
-    id: "id",
-    header: () => null,
-    cell: ({ row }) => <Label>{row.original.id}</Label>,
-  },
-  {
-    accessorKey: "subject",
-    header: ({ column }) => <SortableHeader column={column} title="Feature" />,
-    cell: ({ row }) => (
-      <Button variant="link" className="text-foreground w-fit px-0 text-left">
-        <Link
-          href={`/projects/${row.original.projectSlug}/${row.original.slug}`}
-        >
-          {row.original.subject}
-        </Link>
-      </Button>
-    ),
-    enableHiding: false,
-  },
-  {
-    accessorKey: "percentDone",
-    header: ({ column }) => <SortableHeader column={column} title="Progress" />,
-    cell: ({ row }) => (
-      <div className="w-32 flex items-center gap-2">
-        <Progress value={row.original.percentDone} />
-        <span className="">{row.original.percentDone}%</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "dueStatus",
-    header: ({ column }) => <SortableHeader column={column} title="Status" />,
-    cell: ({ row }) => {
-      const status = getFeatureStatus(row.original.dueStatus);
-      let icon = <Loader />;
-      if (row.original.dueStatus === FeatureStatus.ONTIME)
-        icon = <CircleCheck className="text-green-500 dark:text-green-400" />;
-      if (row.original.dueStatus === FeatureStatus.LATE)
-        icon = <CircleX className="text-red-500 dark:text-red-400" />;
-      return (
-        <Badge
-          variant="outline"
-          className={cn("text-muted-foreground px-1.5", status.class)}
-        >
-          {icon}
-          {status.text}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "totalSpentTime",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="Time spent"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="text-right">{row.original.totalSpentTime}</div>
-    ),
-  },
-  {
-    accessorKey: "urgentBugs",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="Urgent bugs"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="text-right">{row.original.urgentBugs}</div>
-    ),
-  },
-  {
-    accessorKey: "highBugs",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="High bugs"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="text-right">{row.original.highBugs}</div>
-    ),
-  },
-  {
-    accessorKey: "ncrBugs",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="NCR bugs"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row }) => <div className="text-right">{row.original.ncrBugs}</div>,
-  },
-];
-
-export function ProjectTable({ data: initialData }: { data: Feature[] }) {
+export function FeatureTable({
+  data: initialData,
+  slug,
+  route,
+}: {
+  data: Feature[];
+  slug: string;
+  route: string;
+}) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
   const [sorting, setSorting] = React.useState<SortingState>([]);
+
+  // Define columns with clear, readable structure
+  const columns: ColumnDef<Feature>[] = [
+    {
+      id: "id",
+      header: () => null,
+      cell: ({ row }) => (
+        <Link
+          href={`${bugTrackerUrl}/${row.original.id}`}
+          target="_blank"
+          rel="noopener"
+          className="hover:underline"
+        >
+          {row.original.id}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "subject",
+      header: ({ column }) => (
+        <SortableHeader column={column} title="Feature" />
+      ),
+      cell: ({ row }) => (
+        <Button variant="link" className="text-foreground w-fit px-0 text-left">
+          <Link href={`/${route}/${slug}/${row.original.slug}`}>
+            {row.original.subject}
+          </Link>
+        </Button>
+      ),
+      enableHiding: false,
+    },
+    {
+      accessorKey: "percentDone",
+      header: ({ column }) => (
+        <SortableHeader column={column} title="Progress" />
+      ),
+      cell: ({ row }) => (
+        <div className="w-32 flex items-center gap-2">
+          <Progress value={row.original.percentDone} />
+          <span className="">{row.original.percentDone}%</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "dueStatus",
+      header: ({ column }) => <SortableHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const status = getFeatureStatus(row.original.dueStatus);
+        let icon = <Loader />;
+        if (row.original.dueStatus === FeatureStatus.ONTIME)
+          icon = <CircleCheck className="text-green-500 dark:text-green-400" />;
+        if (row.original.dueStatus === FeatureStatus.LATE)
+          icon = <CircleX className="text-red-500 dark:text-red-400" />;
+        return (
+          <Badge
+            variant="outline"
+            className={cn("text-muted-foreground px-1.5", status.class)}
+          >
+            {icon}
+            {status.text}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "totalSpentTime",
+      header: ({ column }) => (
+        <SortableHeader
+          column={column}
+          title="Time spent"
+          className="w-full justify-end"
+        />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{row.original.totalSpentTime}</div>
+      ),
+    },
+    {
+      accessorKey: "urgentBugs",
+      header: ({ column }) => (
+        <SortableHeader
+          column={column}
+          title="Urgent bugs"
+          className="w-full justify-end"
+        />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{row.original.urgentBugs}</div>
+      ),
+    },
+    {
+      accessorKey: "highBugs",
+      header: ({ column }) => (
+        <SortableHeader
+          column={column}
+          title="High bugs"
+          className="w-full justify-end"
+        />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{row.original.highBugs}</div>
+      ),
+    },
+    {
+      accessorKey: "ncrBugs",
+      header: ({ column }) => (
+        <SortableHeader
+          column={column}
+          title="NCR bugs"
+          className="w-full justify-end"
+        />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{row.original.ncrBugs}</div>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data: initialData,

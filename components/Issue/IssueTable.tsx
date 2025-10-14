@@ -45,16 +45,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Story } from "@/lib/types";
-import { Progress } from "./ui/progress";
-import { cn, visibleColumns } from "@/lib/utils";
+import { Progress } from "../ui/progress";
+import { bugTrackerUrl, cn, visibleColumns } from "@/lib/utils";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Separator } from "./ui/separator";
+} from "../ui/select";
+import { Separator } from "../ui/separator";
+import Link from "next/link";
 
 // Define a reusable component for sortable headers
 const SortableHeader = ({
@@ -89,7 +90,16 @@ const columns: ColumnDef<Story>[] = [
   {
     id: "id",
     header: () => null,
-    cell: ({ row }) => <Label>{row.original.id}</Label>,
+    cell: ({ row }) => (
+      <Link
+        href={`${bugTrackerUrl}/${row.original.id}`}
+        target="_blank"
+        rel="noopener"
+        className="hover:underline"
+      >
+        {row.original.id}
+      </Link>
+    ),
   },
   {
     accessorKey: "subject",
@@ -221,7 +231,7 @@ const columns: ColumnDef<Story>[] = [
   },
 ];
 
-export function FeatureTable({ data: initialData }: { data: Story[] }) {
+export function IssueTable({ data: initialData }: { data: Story[] }) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
       percentDone: false,

@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import {
   parseMultipleCSVFileObjects,
   calculateProjects,
+  calculateSolutions,
 } from "@/lib/csvParser";
 
 const CSVUpload: React.FC = () => {
   const router = useRouter();
-  const { setData, setProjects } = useDashboard();
+  const { setData, setProjects, setSolutions } = useDashboard();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -92,6 +93,10 @@ const CSVUpload: React.FC = () => {
       // Calculate projects from the combined data
       const projects = calculateProjects(combinedIssues);
       setProjects(projects);
+
+      // Calculate solutions from the combined data
+      const solutions = calculateSolutions(combinedIssues);
+      setSolutions(solutions);
 
       router.push("/projects");
     } catch (error) {

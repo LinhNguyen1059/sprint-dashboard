@@ -14,15 +14,15 @@ export default function FeatureDetail() {
   const params = useParams();
   const { slug, feature } = params;
 
-  const { projects } = useDashboard();
+  const { solutions } = useDashboard();
 
   const featureData = useMemo(() => {
-    if (!slug || !feature || projects.length === 0) {
+    if (!slug || !feature || solutions.length === 0) {
       return undefined;
     }
-    const project = projects.find((p) => p.slug === slug);
+    const project = solutions.find((p) => p.slug === slug);
     return project?.features.find((f) => f.slug === feature);
-  }, [feature, projects, slug]);
+  }, [feature, solutions, slug]);
 
   const flattenedStories = useMemo(() => {
     if (!featureData) {
@@ -71,6 +71,7 @@ export default function FeatureDetail() {
       </div>
 
       <IssueOverview feature={featureData} stories={flattenedStories} />
+
       <IssueTable data={flattenedStories} />
     </div>
   );

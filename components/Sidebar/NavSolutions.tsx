@@ -11,30 +11,30 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { isRouteActive } from "@/lib/utils";
 import { useDashboard } from "../DashboardLayout";
+import { isRouteActive } from "@/lib/utils";
 
-export function NavProjects() {
+export function NavSolutions() {
   const path = usePathname();
-  const { projects } = useDashboard();
+  const { solutions } = useDashboard();
   const params = useParams();
   const { slug } = params;
 
-  const isProjectRoute = isRouteActive("/projects", path);
+  const isSolutionRoute = isRouteActive("/solutions", path);
 
-  if (!projects.length) return null;
+  if (!solutions.length) return null;
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>Solutions</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => {
-          const isActive = slug === item.slug && isProjectRoute;
+        {solutions.map((item) => {
+          const isActive = slug === item.slug && isSolutionRoute;
 
           return (
             <SidebarMenuItem key={item.slug}>
               <SidebarMenuButton asChild>
-                <Link href={`/projects/${item.slug}`}>
+                <Link href={`/solutions/${item.slug}`}>
                   {isActive && <ChevronRight />}
                   <span className={isActive ? "font-medium" : ""}>
                     {item.name}

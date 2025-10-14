@@ -1,38 +1,24 @@
 "use client";
 
 import { useMemo } from "react";
-import { useParams } from "next/navigation";
 import { Pie, PieChart } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Project, Feature, FeatureStatus } from "@/lib/types";
-import { useDashboard } from "../DashboardLayout";
-
-// Progress chart configuration
-const progressConfig = {
-  done: {
-    key: "done",
-    label: "Done",
-    color: "var(--chart-12)",
-  },
-  inProgress: {
-    key: "inProgress",
-    label: "In Progress",
-    color: "var(--chart-13)",
-  },
-  waiting: {
-    key: "waiting",
-    label: "Waiting",
-    color: "var(--chart-14)",
-  },
-};
+import { Feature, FeatureStatus } from "@/lib/types";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Button } from "../ui/button";
+import { List } from "lucide-react";
 
 const bugConfig = {
   development: {
@@ -64,14 +50,6 @@ const dueStatusConfig = {
     label: "Late",
     color: "var(--chart-11)",
   },
-};
-
-// Time spent chart configuration
-const timeSpentConfig = {
-  feature: {
-    label: "Feature",
-  },
-  // Colors will be dynamically assigned
 };
 
 // Generate distinct colors for features
@@ -130,78 +108,15 @@ const generateTimeSpentConfig = (features: Feature[]) => {
   return config;
 };
 
-export function ProjectChart() {
-  const { projects } = useDashboard();
-  const params = useParams();
-  const { slug } = params;
+// Legend item component for popover
+const LegendItem = ({ label, color }: { label: string; color: string }) => (
+  <div className="flex items-center gap-2">
+    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+    <span className="text-sm">{label}</span>
+  </div>
+);
 
-  const features = useMemo(() => {
-    if (projects.length === 0 || !slug) {
-      return [];
-    }
-
-    const project = projects.find((p) => p.projectSlug === slug) as Project;
-
-    if (!project || !project.features || project.features.length === 0) {
-      return [];
-    }
-
-    return project.features;
-  }, [projects, slug]);
-
-  // Progress chart data based on percentDone
-  const progressData = useMemo(() => {
-    if (!features || features.length === 0) {
-      return [
-        {
-          name: progressConfig.done.key,
-          value: 0,
-          fill: progressConfig.done.color,
-        },
-        {
-          name: progressConfig.inProgress.key,
-          value: 0,
-          fill: progressConfig.inProgress.color,
-        },
-        {
-          name: progressConfig.waiting.key,
-          value: 0,
-          fill: progressConfig.waiting.color,
-        },
-      ];
-    }
-
-    const completed = features.filter(
-      (feature) => feature.percentDone === 100
-    ).length;
-
-    const inProgress = features.filter(
-      (feature) => feature.percentDone > 0 && feature.percentDone < 100
-    ).length;
-
-    const notStarted = features.filter(
-      (feature) => feature.percentDone === 0
-    ).length;
-
-    return [
-      {
-        name: progressConfig.done.key,
-        value: completed,
-        fill: progressConfig.done.color,
-      },
-      {
-        name: progressConfig.inProgress.key,
-        value: inProgress,
-        fill: progressConfig.inProgress.color,
-      },
-      {
-        name: progressConfig.waiting.key,
-        value: notStarted,
-        fill: progressConfig.waiting.color,
-      },
-    ];
-  }, [features]);
-
+export function FeatureChart({ data: features }: { data: Feature[] }) {
   // Status chart data
   const dueStatusData = useMemo(() => {
     if (!features || features.length === 0) {
@@ -315,34 +230,34 @@ export function ProjectChart() {
   }, [features]);
 
   return (
-    <div className="grid flex-1 scroll-mt-20 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
+    <div className="grid flex-1 scroll-mt-20 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Progress</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          <ChartContainer
-            config={progressConfig}
-            className="mx-auto max-h-[250px]"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <Pie data={progressData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
-            </PieChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="flex flex-col shadow-none">
-        <CardHeader className="items-center pb-0">
-          <CardTitle>Status</CardTitle>
+          <CardTitle>Project Status</CardTitle>
+          <CardAction>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <List className="h-4 w-4 mr-1" />
+                  View legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="grid gap-2">
+                <LegendItem
+                  label={dueStatusConfig.inprogress.label}
+                  color={dueStatusConfig.inprogress.color}
+                />
+                <LegendItem
+                  label={dueStatusConfig.ontime.label}
+                  color={dueStatusConfig.ontime.color}
+                />
+                <LegendItem
+                  label={dueStatusConfig.late.label}
+                  color={dueStatusConfig.late.color}
+                />
+              </PopoverContent>
+            </Popover>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer
@@ -354,11 +269,7 @@ export function ProjectChart() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={dueStatusData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
+              <Pie data={dueStatusData} label dataKey="value" />
             </PieChart>
           </ChartContainer>
         </CardContent>
@@ -367,6 +278,28 @@ export function ProjectChart() {
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
           <CardTitle>Time spent</CardTitle>
+          <CardAction>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <List className="h-4 w-4 mr-1" />
+                  View legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="grid gap-2 max-h-60 overflow-y-auto"
+              >
+                {Object.entries(dynamicTimeSpentConfig).map(([key, config]) => (
+                  <LegendItem
+                    key={key}
+                    label={config.label}
+                    color={config.color}
+                  />
+                ))}
+              </PopoverContent>
+            </Popover>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer
@@ -378,11 +311,7 @@ export function ProjectChart() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={timeSpentData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
+              <Pie data={timeSpentData} label dataKey="value" />
             </PieChart>
           </ChartContainer>
         </CardContent>
@@ -391,6 +320,26 @@ export function ProjectChart() {
       <Card className="flex flex-col shadow-none">
         <CardHeader className="items-center pb-0">
           <CardTitle>Bugs</CardTitle>
+          <CardAction>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <List className="h-4 w-4 mr-1" />
+                  View legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="grid gap-2">
+                <LegendItem
+                  label={bugConfig.development.label}
+                  color={bugConfig.development.color}
+                />
+                <LegendItem
+                  label={bugConfig.ncr.label}
+                  color={bugConfig.ncr.color}
+                />
+              </PopoverContent>
+            </Popover>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer config={bugConfig} className="mx-auto max-h-[250px]">
@@ -399,11 +348,7 @@ export function ProjectChart() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Pie data={bugsData} dataKey="value" />
-              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-translate-y-2 flex-wrap gap-2 justify-center"
-              />
+              <Pie data={bugsData} label dataKey="value" />
             </PieChart>
           </ChartContainer>
         </CardContent>

@@ -6,22 +6,22 @@ import { useDashboard } from "@/components/DashboardLayout";
 import { FeatureChart, FeatureTable } from "@/components/Feature";
 import { usePageTitle } from "@/hooks/use-page-title";
 
-export default function ProjectDetail() {
-  const { projects } = useDashboard();
+export default function SolutionDetail() {
+  const { solutions } = useDashboard();
   const params = useParams();
   const { slug } = params;
 
   // Find the project by slug
-  const project = projects.find((p) => p.slug === slug);
+  const solution = solutions.find((p) => p.slug === slug);
 
-  usePageTitle(project?.name || "Project Detail");
+  usePageTitle(solution?.name || "Project Detail");
 
-  if (!project) {
+  if (!solution) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <h3 className="text-lg font-medium mb-2">Project not found</h3>
+        <h3 className="text-lg font-medium mb-2">Solution not found</h3>
         <p className="text-muted-foreground">
-          The project you are looking for does not exist or has not been loaded
+          The solution you are looking for does not exist or has not been loaded
           yet.
         </p>
       </div>
@@ -34,11 +34,11 @@ export default function ProjectDetail() {
         <h1 className="text-2xl font-bold">Features Board</h1>
       </div>
 
-      <FeatureChart data={project.features} />
+      <FeatureChart data={solution.features} />
       <FeatureTable
-        data={project.features}
+        data={solution.features}
         slug={slug as string}
-        route="projects"
+        route="solutions"
       />
     </div>
   );
