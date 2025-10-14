@@ -64,6 +64,7 @@ export default function FeatureDetail() {
           <h1 className="text-2xl font-bold">{featureData?.subject}</h1>
           {featureStatus && (
             <Badge variant="outline" className={featureStatus.class}>
+              {featureStatus.icon && <featureStatus.icon />}
               {featureStatus.text}
             </Badge>
           )}

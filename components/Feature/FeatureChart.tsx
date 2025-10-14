@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent
+  ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Feature, FeatureStatus } from "@/lib/types";
 
@@ -15,13 +15,13 @@ const bugConfig = {
   development: {
     key: "development",
     label: "Development",
-    color: "var(--chart-1)"
+    color: "var(--chart-5)",
   },
   ncr: {
     key: "ncr",
     label: "Post-Release",
-    color: "var(--chart-5)"
-  }
+    color: "var(--chart-1)",
+  },
 };
 
 // Status chart configuration
@@ -29,18 +29,18 @@ const dueStatusConfig = {
   inprogress: {
     key: "inprogress",
     label: "In Progress",
-    color: "var(--chart-9)"
+    color: "var(--chart-2)",
   },
   ontime: {
     key: "ontime",
     label: "On Time",
-    color: "var(--chart-7)"
+    color: "var(--chart-26)",
   },
   late: {
     key: "late",
     label: "Late",
-    color: "var(--chart-11)"
-  }
+    color: "var(--chart-11)",
+  },
 };
 
 // Generate distinct colors for features
@@ -75,7 +75,7 @@ const generateFeatureColor = (index: number) => {
     "var(--chart-27)",
     "var(--chart-28)",
     "var(--chart-29)",
-    "var(--chart-30)"
+    "var(--chart-30)",
   ];
   return colors[index % colors.length];
 };
@@ -92,20 +92,54 @@ const generateTimeSpentConfig = (features: Feature[]) => {
     const key = feature.subject;
     config[key] = {
       label: feature.subject,
-      color: generateFeatureColor(index)
+      color: generateFeatureColor(index),
     };
   });
 
   return config;
 };
 
-// Legend item component for popover
-const LegendItem = ({ label, color }: { label: string; color: string }) => (
-  <div className="flex items-center gap-2">
-    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
-    <span className="text-sm">{label}</span>
-  </div>
-);
+function ChartItem({
+  data,
+  config,
+}: {
+  data: {
+    name: string;
+    value: number;
+    percent: number;
+    fill: string;
+  }[];
+  config: Record<string, { label: string; color: string }>;
+}) {
+  return (
+    <ChartContainer config={config} className="mx-auto max-h-[250px] w-full">
+      <PieChart>
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent hideLabel />}
+        />
+        <Pie
+          data={data}
+          label={({ name }: { name: keyof typeof config }) =>
+            config[name].label
+          }
+          dataKey="value"
+        >
+          <LabelList
+            dataKey="percent"
+            className="fill-background"
+            stroke="none"
+            fontSize={12}
+            formatter={(percent: number) =>
+              percent > 0 ? `${percent.toFixed(2)}%` : ""
+            }
+            position="bottom"
+          />
+        </Pie>
+      </PieChart>
+    </ChartContainer>
+  );
+}
 
 export function FeatureChart({ data: features }: { data: Feature[] }) {
   // Status chart data
@@ -116,20 +150,20 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           name: dueStatusConfig.inprogress.key,
           value: 0,
           percent: 0,
-          fill: dueStatusConfig.inprogress.color
+          fill: dueStatusConfig.inprogress.color,
         },
         {
           name: dueStatusConfig.ontime.key,
           value: 0,
           percent: 0,
-          fill: dueStatusConfig.ontime.color
+          fill: dueStatusConfig.ontime.color,
         },
         {
           name: dueStatusConfig.late.key,
           value: 0,
           percent: 0,
-          fill: dueStatusConfig.late.color
-        }
+          fill: dueStatusConfig.late.color,
+        },
       ];
     }
 
@@ -150,20 +184,20 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
         name: dueStatusConfig.inprogress.key,
         value: inProgressCount,
         percent: (inProgressCount / features.length) * 100,
-        fill: dueStatusConfig.inprogress.color
+        fill: dueStatusConfig.inprogress.color,
       },
       {
         name: dueStatusConfig.ontime.key,
         value: onTimeCount,
         percent: (onTimeCount / features.length) * 100,
-        fill: dueStatusConfig.ontime.color
+        fill: dueStatusConfig.ontime.color,
       },
       {
         name: dueStatusConfig.late.key,
         value: lateCount,
         percent: (lateCount / features.length) * 100,
-        fill: dueStatusConfig.late.color
-      }
+        fill: dueStatusConfig.late.color,
+      },
     ];
   }, [features]);
 
@@ -186,7 +220,7 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
       name: feature.subject,
       value: feature.totalSpentTime,
       percent: (feature.totalSpentTime / totalSpentTime) * 100,
-      fill: generateFeatureColor(index)
+      fill: generateFeatureColor(index),
     }));
   }, [features]);
 
@@ -203,14 +237,14 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           name: bugConfig.development.key,
           value: 0,
           percent: 0,
-          fill: bugConfig.development.color
+          fill: bugConfig.development.color,
         },
         {
           name: bugConfig.ncr.key,
           value: 0,
           percent: 0,
-          fill: bugConfig.ncr.color
-        }
+          fill: bugConfig.ncr.color,
+        },
       ];
     }
 
@@ -231,14 +265,14 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
         name: bugConfig.development.key,
         value: totalDevelopmentBugs,
         percent: (totalDevelopmentBugs / total) * 100,
-        fill: bugConfig.development.color
+        fill: bugConfig.development.color,
       },
       {
         name: bugConfig.ncr.key,
         value: totalNcrBugs,
         percent: (totalNcrBugs / total) * 100,
-        fill: bugConfig.ncr.color
-      }
+        fill: bugConfig.ncr.color,
+      },
     ];
   }, [features]);
 
@@ -249,34 +283,7 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           <CardTitle>Project Status</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pb-0 px-4">
-          <ChartContainer
-            config={dueStatusConfig}
-            className="mx-auto max-h-[250px] w-full"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <Pie
-                data={dueStatusData}
-                label={({ name }: { name: keyof typeof dueStatusConfig }) =>
-                  dueStatusConfig[name].label
-                }
-                dataKey="value"
-              >
-                <LabelList
-                  dataKey="percent"
-                  className="fill-background"
-                  stroke="none"
-                  fontSize={12}
-                  formatter={(percent: number) =>
-                    percent > 0 ? `${percent.toFixed(2)}%` : ""
-                  }
-                />
-              </Pie>
-            </PieChart>
-          </ChartContainer>
+          <ChartItem data={dueStatusData} config={dueStatusConfig} />
         </CardContent>
       </Card>
 
@@ -285,36 +292,7 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           <CardTitle>Time spent</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pb-0 px-4">
-          <ChartContainer
-            config={dynamicTimeSpentConfig}
-            className="mx-auto max-h-[250px] w-full"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <Pie
-                data={timeSpentData}
-                label={({
-                  name
-                }: {
-                  name: keyof typeof dynamicTimeSpentConfig;
-                }) => dynamicTimeSpentConfig[name].label}
-                dataKey="value"
-              >
-                <LabelList
-                  dataKey="percent"
-                  className="fill-background"
-                  stroke="none"
-                  fontSize={12}
-                  formatter={(percent: number) =>
-                    percent > 0 ? `${percent.toFixed(2)}%` : ""
-                  }
-                />
-              </Pie>
-            </PieChart>
-          </ChartContainer>
+          <ChartItem data={timeSpentData} config={dynamicTimeSpentConfig} />
         </CardContent>
       </Card>
 
@@ -323,34 +301,7 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           <CardTitle>Bugs</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pb-0 px-4">
-          <ChartContainer
-            config={bugConfig}
-            className="mx-auto max-h-[250px] w-full"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <Pie
-                data={bugsData}
-                label={({ name }: { name: keyof typeof bugConfig }) =>
-                  bugConfig[name].label
-                }
-                dataKey="value"
-              >
-                <LabelList
-                  dataKey="percent"
-                  className="fill-background"
-                  stroke="none"
-                  fontSize={12}
-                  formatter={(percent: number) =>
-                    percent > 0 ? `${percent.toFixed(2)}%` : ""
-                  }
-                />
-              </Pie>
-            </PieChart>
-          </ChartContainer>
+          <ChartItem data={bugsData} config={bugConfig} />
         </CardContent>
       </Card>
     </div>

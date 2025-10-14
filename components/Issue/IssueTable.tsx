@@ -166,7 +166,11 @@ const columns: ColumnDef<Story>[] = [
     ),
     cell: ({ row }) => (
       <div className="w-32 flex items-center gap-2">
-        <Progress value={row.original.percentDone} />
+        <Progress
+          value={row.original.percentDone}
+          className="bg-primary/10"
+          progressClassName="bg-blue-500"
+        />
         <span className="">{row.original.percentDone}%</span>
       </div>
     ),

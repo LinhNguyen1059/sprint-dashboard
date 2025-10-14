@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { FeatureStatus } from "./types";
+import { CircleCheck, Loader, TimerOff } from "lucide-react";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,17 +30,20 @@ export const getFeatureStatus = (status: number) => {
     case FeatureStatus.INPROGRESS:
       return {
         text: "In Progress",
-        class: "",
+        class: "text-(--chart-2) border-(--chart-2)/10",
+        icon: Loader,
       };
     case FeatureStatus.ONTIME:
       return {
         text: "On Time",
-        class: "text-green-500 border-green-100",
+        class: "text-(--chart-26) border-(--chart-26)/10",
+        icon: CircleCheck,
       };
     default:
       return {
         text: "Late",
-        class: "text-red-500 border-red-100",
+        class: "text-(--chart-11) border-(--chart-11)/10",
+        icon: TimerOff,
       };
   }
 };

@@ -16,14 +16,7 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  CircleCheck,
-  CircleX,
-  Loader,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +27,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -43,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Feature, FeatureStatus } from "@/lib/types";
+import { Feature } from "@/lib/types";
 import { Progress } from "../ui/progress";
 import {
   bugTrackerUrl,
@@ -118,11 +110,14 @@ export function FeatureTable({
         <SortableHeader column={column} title="Feature" />
       ),
       cell: ({ row }) => (
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          <Link href={`/${route}/${slug}/${row.original.slug}`}>
+        <Link href={`/${route}/${slug}/${row.original.slug}`}>
+          <Button
+            variant="link"
+            className="text-foreground w-fit px-0 text-left"
+          >
             {row.original.subject}
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       ),
       enableHiding: false,
     },
@@ -133,7 +128,11 @@ export function FeatureTable({
       ),
       cell: ({ row }) => (
         <div className="w-32 flex items-center gap-2">
-          <Progress value={row.original.percentDone} />
+          <Progress
+            value={row.original.percentDone}
+            className="bg-primary/10"
+            progressClassName="bg-blue-500"
+          />
           <span className="">{row.original.percentDone}%</span>
         </div>
       ),
@@ -143,17 +142,12 @@ export function FeatureTable({
       header: ({ column }) => <SortableHeader column={column} title="Status" />,
       cell: ({ row }) => {
         const status = getFeatureStatus(row.original.dueStatus);
-        let icon = <Loader />;
-        if (row.original.dueStatus === FeatureStatus.ONTIME)
-          icon = <CircleCheck className="text-green-500 dark:text-green-400" />;
-        if (row.original.dueStatus === FeatureStatus.LATE)
-          icon = <CircleX className="text-red-500 dark:text-red-400" />;
         return (
           <Badge
             variant="outline"
             className={cn("text-muted-foreground px-1.5", status.class)}
           >
-            {icon}
+            {status.icon && <status.icon />}
             {status.text}
           </Badge>
         );
