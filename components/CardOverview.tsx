@@ -110,7 +110,7 @@ export default function CardOverview({ metrics, slug }: Props) {
 
                 <div>
                   <div className="font-medium">Spent time</div>
-                  <div className="flex items-center gap-1 font-medium text-green-500">
+                  <div className="flex items-center gap-1 font-medium text-green-700">
                     <Clock className="h-4 w-4" />
                     {metric.totalSpentTime} hrs
                   </div>
