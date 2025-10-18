@@ -14,10 +14,11 @@ export function SiteHeader() {
   const params = useParams();
   const { slug, feature } = params;
 
-  const { projects, solutions } = useDashboard();
+  const { projects, solutions, members } = useDashboard();
 
   const isProjectRoute = isRouteActive("/projects", path);
   const isSolutionRoute = isRouteActive("/solutions", path);
+  const isMemberRoute = isRouteActive("/members", path);
 
   const route = useMemo(() => {
     return routes.find((route) => {
@@ -49,8 +50,24 @@ export function SiteHeader() {
       return solutions.find((p) => p.slug === slug)?.name;
     }
 
+    if (isMemberRoute) {
+      if (members.length === 0 || !slug) {
+        return null;
+      }
+
+      return members.find((p) => p.slug === slug)?.name;
+    }
+
     return null;
-  }, [projects, solutions, slug, isProjectRoute, isSolutionRoute]);
+  }, [
+    projects,
+    solutions,
+    slug,
+    isProjectRoute,
+    isSolutionRoute,
+    members,
+    isMemberRoute,
+  ]);
 
   const featureName = useMemo(() => {
     if (isProjectRoute) {

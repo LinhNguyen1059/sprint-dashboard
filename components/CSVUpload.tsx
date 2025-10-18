@@ -8,11 +8,13 @@ import {
   parseMultipleCSVFileObjects,
   calculateProjects,
   calculateSolutions,
+  calculateMembers,
 } from "@/lib/csvParser";
+import { TEAMS } from "@/lib/teams";
 
 const CSVUpload: React.FC = () => {
   const router = useRouter();
-  const { setData, setProjects, setSolutions } = useDashboard();
+  const { setData, setProjects, setSolutions, setMembers } = useDashboard();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -98,10 +100,16 @@ const CSVUpload: React.FC = () => {
       const solutions = calculateSolutions(combinedIssues);
       setSolutions(solutions);
 
+      // Calculate members from the combined data and teams
+      const members = calculateMembers(combinedIssues, TEAMS);
+      setMembers(members);
+
       router.push("/projects");
     } catch (error) {
       console.error("Error parsing CSV files:", error);
       alert("Error parsing CSV files. Please check the console for details.");
+    } finally {
+      setLoading(false);
     }
   };
 

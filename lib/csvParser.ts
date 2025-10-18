@@ -5,7 +5,9 @@ import {
   FeatureStatus,
   Project,
   Solution,
-  Story
+  Story,
+  Team,
+  Member,
 } from "./types";
 import { formatValueToSlug } from "./utils";
 
@@ -56,7 +58,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               return value === "1";
             }
             return value;
-          }
+          },
         });
 
         // Convert parsed data to our CombinedIssue interface
@@ -109,7 +111,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
             storyPoints: row["Story points"]
               ? parseFloat(row["Story points"])
               : 0,
-            projectSlug: projectSlug
+            projectSlug: projectSlug,
           };
         });
 
@@ -146,6 +148,67 @@ export async function parseMultipleCSVFileObjects(
 }
 
 /**
+ * Parse teams CSV file content and extract team data
+ * @param fileContent String content of the teams CSV file
+ * @returns Array of teams with their members
+ */
+export function parseTeamsCSV(fileContent: string): Team[] {
+  const parsedData: ParseResult<Record<string, string>> = parse(fileContent, {
+    header: true,
+    skipEmptyLines: true,
+  });
+
+  const teams: Team[] = [];
+  let currentTeam: Team | null = null;
+
+  parsedData.data.forEach((row) => {
+    const teamName = row.Team;
+    const memberName = row.Members;
+
+    if (teamName && teamName.trim() !== "") {
+      // Create a new team
+      if (currentTeam) {
+        teams.push(currentTeam);
+      }
+      currentTeam = {
+        name: teamName.trim(),
+        members: memberName ? [memberName.trim()] : [],
+      };
+    } else if (currentTeam && memberName && memberName.trim() !== "") {
+      // Add member to the current team
+      currentTeam.members.push(memberName.trim());
+    }
+  });
+
+  // Don't forget the last team
+  if (currentTeam) {
+    teams.push(currentTeam);
+  }
+
+  return teams;
+}
+
+/**
+ * Read and parse the teams.csv file from the project
+ * @returns Promise that resolves to array of teams
+ */
+export async function readTeamsCSV(): Promise<Team[]> {
+  try {
+    // In a browser environment, we need to fetch the file from the public directory
+    const response = await fetch("/lib/teams.csv");
+    if (!response.ok) {
+      console.warn(`Failed to fetch teams.csv: ${response.statusText}`);
+      return [];
+    }
+    const fileContent = await response.text();
+    return parseTeamsCSV(fileContent);
+  } catch (error) {
+    console.warn("Error reading teams.csv:", error);
+    return [];
+  }
+}
+
+/**
  * Calculate feature status based on due date, closed date and status
  * @param dueDate Due date of the feature
  * @param closedDate Closed date of the feature
@@ -155,7 +218,7 @@ export async function parseMultipleCSVFileObjects(
 function calculateFeatureStatus({
   dueDate,
   closedDate,
-  status
+  status,
 }: {
   dueDate: string;
   closedDate: string;
@@ -207,7 +270,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         dueStatus: calculateFeatureStatus({
           closedDate: epic.closed,
           dueDate: epic.dueDate,
-          status: epic.status
+          status: epic.status,
         }),
         slug: formatValueToSlug(epic.subject),
         urgentBugs: 0,
@@ -215,7 +278,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         normalBugs: 0,
         ncrBugs: 0,
         stories: [],
-        others: []
+        others: [],
       };
     });
 
@@ -259,7 +322,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         urgentBugs: urgentCount,
         highBugs: highCount,
         normalBugs: normalCount,
-        ncrBugs: ncrCount
+        ncrBugs: ncrCount,
       };
     });
 
@@ -353,7 +416,7 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
       slug: projectSlug,
       totalItems: projectIssues.length,
       totalMembers: totalMembers,
-      features: features
+      features: features,
     };
 
     projects.push(project);
@@ -408,11 +471,229 @@ export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
       slug: tagSlug,
       totalItems: issues.length,
       totalMembers: uniqueAssignees.size,
-      features: taggedFeatures
+      features: taggedFeatures,
     };
 
     solutions.push(solution);
   });
 
   return solutions;
+}
+
+/**
+ * Calculate members from combined issues data
+ * @param issues Array of combined issues with project info
+ * @param teams Array of teams with their members
+ * @returns Array of members with their stats
+ */
+export function calculateMembers(
+  issues: CombinedIssue[],
+  teams: Team[]
+): Member[] {
+  // Create a set of valid member names from teams for quick lookup
+  const validMemberNames = new Set<string>();
+  teams.forEach((team) => {
+    team.members.forEach((member) => {
+      if (member && member.trim() !== "") {
+        validMemberNames.add(member.trim());
+      }
+    });
+  });
+
+  // If no teams are defined, extract member names from the issues data as a fallback
+  const useFallback = teams.length === 0;
+  if (useFallback) {
+    issues.forEach((issue) => {
+      if (issue.assignee && issue.assignee.trim() !== "") {
+        const assignee = issue.assignee.trim();
+        if (validMemberNames.has(assignee) || useFallback) {
+          validMemberNames.add(assignee);
+        }
+      }
+      if (issue.doneBy && issue.doneBy.trim() !== "") {
+        const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+        doneByNames.forEach((name) => {
+          if (name && name.trim() !== "") {
+            const doneByName = name.trim();
+            if (validMemberNames.has(doneByName) || useFallback) {
+              validMemberNames.add(doneByName);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // Create a map of member names to their stats
+  const memberMap: Record<string, Member> = {};
+
+  // Collect all unique member names from assignee and doneBy fields
+  issues.forEach((issue) => {
+    // Process assignee
+    if (issue.assignee && issue.assignee.trim() !== "") {
+      const assignee = issue.assignee.trim();
+
+      // Only process if the assignee is in our valid members list (or if using fallback)
+      if (validMemberNames.has(assignee) || useFallback) {
+        if (!memberMap[assignee]) {
+          memberMap[assignee] = {
+            slug: formatValueToSlug(assignee),
+            name: assignee,
+            timeSpent: 0,
+            urgentBugs: 0,
+            highBugs: 0,
+            ncrBugs: 0,
+            issues: [],
+          };
+        }
+        memberMap[assignee].issues.push(issue);
+        memberMap[assignee].timeSpent += issue.totalSpentTime;
+      }
+    }
+
+    // Process doneBy (could be multiple names separated by commas)
+    if (issue.doneBy && issue.doneBy.trim() !== "") {
+      const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+      doneByNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          const doneByName = name.trim();
+
+          // Only process if the doneBy name is in our valid members list (or if using fallback)
+          if (validMemberNames.has(doneByName) || useFallback) {
+            if (!memberMap[doneByName]) {
+              memberMap[doneByName] = {
+                slug: formatValueToSlug(doneByName),
+                name: doneByName,
+                timeSpent: 0,
+                urgentBugs: 0,
+                highBugs: 0,
+                ncrBugs: 0,
+                issues: [],
+              };
+            }
+            // Only add the issue if it's not already in the array
+            if (!memberMap[doneByName].issues.includes(issue)) {
+              memberMap[doneByName].issues.push(issue);
+              memberMap[doneByName].timeSpent += issue.totalSpentTime;
+            }
+          }
+        }
+      });
+    }
+
+    // Count bugs and NCR issues for members
+    if (issue.tracker === "Bug") {
+      // Process assignee for bug counting
+      if (issue.assignee && issue.assignee.trim() !== "") {
+        const assignee = issue.assignee.trim();
+
+        // Only process if the assignee is in our valid members list (or if using fallback)
+        if (validMemberNames.has(assignee) || useFallback) {
+          if (!memberMap[assignee]) {
+            memberMap[assignee] = {
+              slug: formatValueToSlug(assignee),
+              name: assignee,
+              timeSpent: 0,
+              urgentBugs: 0,
+              highBugs: 0,
+              ncrBugs: 0,
+              issues: [],
+            };
+          }
+
+          if (issue.priority === "Urgent") {
+            memberMap[assignee].urgentBugs += 1;
+          } else if (issue.priority === "High") {
+            memberMap[assignee].highBugs += 1;
+          }
+        }
+      }
+
+      // Process doneBy for bug counting
+      if (issue.doneBy && issue.doneBy.trim() !== "") {
+        const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+        doneByNames.forEach((name) => {
+          if (name && name.trim() !== "") {
+            const doneByName = name.trim();
+
+            // Only process if the doneBy name is in our valid members list (or if using fallback)
+            if (validMemberNames.has(doneByName) || useFallback) {
+              if (!memberMap[doneByName]) {
+                memberMap[doneByName] = {
+                  slug: formatValueToSlug(doneByName),
+                  name: doneByName,
+                  timeSpent: 0,
+                  urgentBugs: 0,
+                  highBugs: 0,
+                  ncrBugs: 0,
+                  issues: [],
+                };
+              }
+
+              // Only count the bug once per member
+              if (issue.priority === "Urgent") {
+                memberMap[doneByName].urgentBugs += 1;
+              } else if (issue.priority === "High") {
+                memberMap[doneByName].highBugs += 1;
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Count NCR issues for members
+    if (issue.issueCategories === "NCR") {
+      // Process assignee for NCR counting
+      if (issue.assignee && issue.assignee.trim() !== "") {
+        const assignee = issue.assignee.trim();
+
+        // Only process if the assignee is in our valid members list (or if using fallback)
+        if (validMemberNames.has(assignee) || useFallback) {
+          if (!memberMap[assignee]) {
+            memberMap[assignee] = {
+              slug: formatValueToSlug(assignee),
+              name: assignee,
+              timeSpent: 0,
+              urgentBugs: 0,
+              highBugs: 0,
+              ncrBugs: 0,
+              issues: [],
+            };
+          }
+          memberMap[assignee].ncrBugs += 1;
+        }
+      }
+
+      // Process doneBy for NCR counting
+      if (issue.doneBy && issue.doneBy.trim() !== "") {
+        const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+        doneByNames.forEach((name) => {
+          if (name && name.trim() !== "") {
+            const doneByName = name.trim();
+
+            // Only process if the doneBy name is in our valid members list (or if using fallback)
+            if (validMemberNames.has(doneByName) || useFallback) {
+              if (!memberMap[doneByName]) {
+                memberMap[doneByName] = {
+                  slug: formatValueToSlug(doneByName),
+                  name: doneByName,
+                  timeSpent: 0,
+                  urgentBugs: 0,
+                  highBugs: 0,
+                  ncrBugs: 0,
+                  issues: [],
+                };
+              }
+              // Only count the NCR once per member
+              memberMap[doneByName].ncrBugs += 1;
+            }
+          }
+        });
+      }
+    }
+  });
+
+  // Convert the map to an array
+  return Object.values(memberMap);
 }

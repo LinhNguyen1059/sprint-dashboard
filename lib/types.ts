@@ -80,6 +80,21 @@ export interface Solution {
   features: Feature[];
 }
 
+export interface Team {
+  name: string;
+  members: string[];
+}
+
+export interface Member {
+  slug: string;
+  name: string;
+  timeSpent: number;
+  urgentBugs: number;
+  highBugs: number;
+  ncrBugs: number;
+  issues: CombinedIssue[];
+}
+
 export enum FeatureStatus {
   INPROGRESS = 0,
   ONTIME = 1,
