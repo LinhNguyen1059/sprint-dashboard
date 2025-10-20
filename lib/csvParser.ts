@@ -115,7 +115,11 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
           };
         });
 
-        resolve(issues);
+        const filterIssues = issues.filter(
+          (issue) => issue.status !== "Rejected"
+        );
+
+        resolve(filterIssues);
       } catch (error) {
         reject(error);
       }

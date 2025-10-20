@@ -185,7 +185,9 @@ const columns: ColumnDef<CombinedIssue>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-right">{row.original.totalSpentTime} hrs</div>
+      <div className="text-right">
+        {row.original.totalSpentTime.toFixed(2)} hrs
+      </div>
     ),
   },
   {
