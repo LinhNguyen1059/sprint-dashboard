@@ -44,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Member } from "@/lib/types";
+import { FeatureStatus, Member } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import {
@@ -58,10 +58,10 @@ import {
 const visibleColumns = {
   name: "Member name",
   timeSpent: "Time spent",
-  urgentBugs: "Urgent bugs",
+  criticalBugs: "Critical bugs",
   highBugs: "High bugs",
   normalBugs: "Normal bugs",
-  ncrBugs: "Post-Release bugs",
+  postReleaseBugs: "Post-Release bugs",
 };
 
 // Define a reusable component for sortable headers
@@ -96,15 +96,29 @@ const SortableHeader = ({
 const columns: ColumnDef<Member>[] = [
   {
     accessorKey: "name",
-    header: ({ column }) => <SortableHeader column={column} title="name" />,
+    header: ({ column }) => <SortableHeader column={column} title="Name" />,
     cell: ({ row }) => (
-      <Link href={`/members/${row.original.slug}`}>
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {row.original.name}
-        </Button>
+      <Link
+        href={`/members/${row.original.slug}`}
+        className="hover:underline font-medium"
+      >
+        {row.original.name}
       </Link>
     ),
     filterFn: "includesString", // Add filter function for string matching
+  },
+  {
+    accessorKey: "ontimePercent",
+    header: () => <div className="text-right">% Tasks On Time</div>,
+    cell: ({ row }) => {
+      const ontimeCount = row.original.issues.filter(
+        (issue) => issue.dueStatus === FeatureStatus.ONTIME
+      ).length;
+      const totalCount = row.original.issues.length;
+      const percent = Math.round((ontimeCount / totalCount) * 100);
+
+      return <div className="text-right">{percent}%</div>;
+    },
   },
   {
     accessorKey: "timeSpent",
@@ -120,16 +134,16 @@ const columns: ColumnDef<Member>[] = [
     ),
   },
   {
-    accessorKey: "urgentBugs",
+    accessorKey: "criticalBugs",
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        title="Urgent bugs"
+        title="Critical bugs"
         className="w-full justify-end"
       />
     ),
     cell: ({ row }) => (
-      <div className="text-right">{row.original.urgentBugs}</div>
+      <div className="text-right">{row.original.criticalBugs}</div>
     ),
   },
   {
@@ -146,7 +160,7 @@ const columns: ColumnDef<Member>[] = [
     ),
   },
   {
-    accessorKey: "ncrBugs",
+    accessorKey: "postReleaseBugs",
     header: ({ column }) => (
       <SortableHeader
         column={column}
@@ -154,7 +168,9 @@ const columns: ColumnDef<Member>[] = [
         className="w-full justify-end"
       />
     ),
-    cell: ({ row }) => <div className="text-right">{row.original.ncrBugs}</div>,
+    cell: ({ row }) => (
+      <div className="text-right">{row.original.postReleaseBugs}</div>
+    ),
   },
 ];
 
@@ -167,7 +183,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 50,
   });
 
   const table = useReactTable({
@@ -300,7 +316,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
       </div>
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-          {table.getFilteredRowModel().rows.length} row(s)
+          Total {table.getFilteredRowModel().rows.length} row(s)
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit mt-4">
           <div className="hidden items-center gap-2 lg:flex">

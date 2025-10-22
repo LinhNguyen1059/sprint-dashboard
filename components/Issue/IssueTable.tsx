@@ -26,6 +26,7 @@ import {
   ChevronsUpDown,
   X,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,9 +45,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Story } from "@/lib/types";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import {
+  CombinedIssue,
+  Feature,
+  FeatureStatus,
+  Member,
+  Story,
+} from "@/lib/types";
+import {
+  bugTrackerUrl,
+  cn,
+  getFeatureStatus,
+  visibleColumns,
+} from "@/lib/utils";
 import { Progress } from "../ui/progress";
-import { bugTrackerUrl, cn, visibleColumns } from "@/lib/utils";
+import { Separator } from "../ui/separator";
 import {
   Select,
   SelectContent,
@@ -54,8 +68,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Separator } from "../ui/separator";
-import Link from "next/link";
+import { IssueOverview } from "./";
 
 // Define a reusable component for sortable headers
 const SortableHeader = ({
@@ -63,7 +76,7 @@ const SortableHeader = ({
   title,
   className = "",
 }: {
-  column: Column<Story>;
+  column: Column<Story | CombinedIssue>;
   title: string;
   className?: string;
 }) => {
@@ -86,7 +99,7 @@ const SortableHeader = ({
 };
 
 // Define columns with clear, readable structure
-const columns: ColumnDef<Story>[] = [
+const columns: ColumnDef<Story | CombinedIssue>[] = [
   {
     id: "id",
     header: () => null,
@@ -118,7 +131,11 @@ const columns: ColumnDef<Story>[] = [
       <SortableHeader column={column} title={visibleColumns["tracker"]} />
     ),
     filterFn: (row, id, value) => {
-      return value === "" || !value || row.getValue(id) === value;
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      if (Array.isArray(value)) {
+        return value.includes(row.getValue(id));
+      }
+      return value === "" || row.getValue(id) === value;
     },
   },
   {
@@ -132,47 +149,36 @@ const columns: ColumnDef<Story>[] = [
       </Badge>
     ),
     filterFn: (row, id, value) => {
-      return value === "" || !value || row.getValue(id) === value;
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      if (Array.isArray(value)) {
+        return value.includes(row.getValue(id));
+      }
+      return value === "" || row.getValue(id) === value;
     },
-  },
-  {
-    accessorKey: "author",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["author"]} />
-    ),
-  },
-  {
-    accessorKey: "assignee",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["assignee"]} />
-    ),
   },
   {
     accessorKey: "priority",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["priority"]} />
     ),
+    filterFn: (row, id, value) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      if (Array.isArray(value)) {
+        return value.includes(row.getValue(id));
+      }
+      return value === "" || row.getValue(id) === value;
+    },
+  },
+  {
+    accessorKey: "closed",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["closed"]} />
+    ),
   },
   {
     accessorKey: "dueDate",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["dueDate"]} />
-    ),
-  },
-  {
-    accessorKey: "percentDone",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["percentDone"]} />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32 flex items-center gap-2">
-        <Progress
-          value={row.original.percentDone}
-          className="bg-primary/10"
-          progressClassName="bg-blue-500"
-        />
-        <span className="">{row.original.percentDone}%</span>
-      </div>
     ),
   },
   {
@@ -206,6 +212,34 @@ const columns: ColumnDef<Story>[] = [
     ),
   },
   {
+    accessorKey: "author",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["author"]} />
+    ),
+  },
+  {
+    accessorKey: "assignee",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["assignee"]} />
+    ),
+  },
+  {
+    accessorKey: "percentDone",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["percentDone"]} />
+    ),
+    cell: ({ row }) => (
+      <div className="w-32 flex items-center gap-2">
+        <Progress
+          value={row.original.percentDone}
+          className="bg-primary/10"
+          progressClassName="bg-blue-500"
+        />
+        <span className="">{row.original.percentDone}%</span>
+      </div>
+    ),
+  },
+  {
     accessorKey: "created",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["created"]} />
@@ -230,24 +264,45 @@ const columns: ColumnDef<Story>[] = [
     ),
   },
   {
-    accessorKey: "closed",
+    accessorKey: "dueStatus",
     header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["closed"]} />
+      <SortableHeader column={column} title="Due status" />
     ),
+    cell: ({ row }) => {
+      const status = getFeatureStatus(row.original.dueStatus);
+      return (
+        <Badge
+          variant="outline"
+          className={cn("text-muted-foreground px-1.5", status.class)}
+        >
+          {status.icon && <status.icon />}
+          {status.text}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value === "" || !value || row.getValue(id) === value;
+    },
   },
 ];
 
-export function IssueTable({ data: initialData }: { data: Story[] }) {
+export function IssueTable({
+  data,
+  issues,
+}: {
+  data: Feature | Story | Member;
+  issues: Story[] | CombinedIssue[];
+}) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
+      author: false,
+      assignee: false,
       percentDone: false,
-      doneBy: false,
-      issueCategories: false,
       created: false,
       startDate: false,
       updated: false,
       lastUpdatedBy: false,
-      closed: false,
+      dueStatus: false,
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -255,25 +310,25 @@ export function IssueTable({ data: initialData }: { data: Story[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 50,
   });
 
   // Get unique tracker values from the data
   const trackerOptions = React.useMemo(() => {
-    const trackers = initialData.map((story) => story.tracker);
+    const trackers = issues.map((story) => story.tracker);
     return Array.from(new Set(trackers)).filter(Boolean);
-  }, [initialData]);
+  }, [issues]);
   const statusOptions = React.useMemo(() => {
-    const statuses = initialData.map((story) => story.status);
+    const statuses = issues.map((story) => story.status);
     return Array.from(new Set(statuses)).filter(Boolean);
-  }, [initialData]);
-  const assigneeOptions = React.useMemo(() => {
-    const assignees = initialData.map((story) => story.assignee);
-    return Array.from(new Set(assignees)).filter(Boolean);
-  }, [initialData]);
+  }, [issues]);
+  const priorityOptions = React.useMemo(() => {
+    const priorities = issues.map((story) => story.priority);
+    return Array.from(new Set(priorities)).filter(Boolean);
+  }, [issues]);
 
   const table = useReactTable({
-    data: initialData,
+    data: issues,
     columns,
     state: {
       sorting,
@@ -297,259 +352,296 @@ export function IssueTable({ data: initialData }: { data: Story[] }) {
 
   // Get the current tracker filter value
   const trackerFilterValue =
-    (table.getColumn("tracker")?.getFilterValue() as string) || "";
+    table.getColumn("tracker")?.getFilterValue() &&
+    Array.isArray(table.getColumn("tracker")?.getFilterValue())
+      ? (table.getColumn("tracker")?.getFilterValue() as string[])
+      : [];
   const statusFilterValue =
-    (table.getColumn("status")?.getFilterValue() as string) || "";
-  const assigneeFilterValue =
-    (table.getColumn("assignee")?.getFilterValue() as string) || "";
+    table.getColumn("status")?.getFilterValue() &&
+    Array.isArray(table.getColumn("status")?.getFilterValue())
+      ? (table.getColumn("status")?.getFilterValue() as string[])
+      : [];
+  const priorityFilterValue =
+    table.getColumn("priority")?.getFilterValue() &&
+    Array.isArray(table.getColumn("priority")?.getFilterValue())
+      ? (table.getColumn("priority")?.getFilterValue() as string[])
+      : [];
+
+  const completionRateClick = () => {
+    table.resetColumnFilters();
+    table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.ONTIME);
+  };
+  const inProgressClick = () => {
+    table.resetColumnFilters();
+    table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.INPROGRESS);
+  };
+  const overdueClick = () => {
+    table.resetColumnFilters();
+    table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.LATE);
+  };
+  const criticalBugsClick = () => {
+    let priorities = priorityOptions.filter((item) =>
+      ["Urgent", "Immediate"].includes(item)
+    );
+    if (priorities.length === 0) {
+      priorities = ["Urgent", "Immediate"];
+    }
+    table.resetColumnFilters();
+    table.getColumn("tracker")?.setFilterValue(["Bug"]);
+    table.getColumn("priority")?.setFilterValue(priorities);
+  };
+  const highBugsClick = () => {
+    table.resetColumnFilters();
+    table.getColumn("tracker")?.setFilterValue(["Bug"]);
+    table.getColumn("priority")?.setFilterValue(["High"]);
+  };
+  const postReleaseBugsClick = () => {
+    table.resetColumnFilters();
+    table.getColumn("tracker")?.setFilterValue(["Bug"]);
+    table.getColumn("issueCategories")?.setFilterValue("Post-Release Issue");
+  };
 
   return (
-    <div className="w-full flex-col justify-start gap-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          {/* Tracker Filter Dropdown */}
-          <Select
-            value={trackerFilterValue}
-            onValueChange={(value) => {
-              table
-                .getColumn("tracker")
-                ?.setFilterValue(value === "all" ? "" : value);
-            }}
-          >
-            <SelectTrigger size="sm" className="w-32" id="tracker-filter">
-              <SelectValue placeholder="All Trackers" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Trackers</SelectItem>
-              {trackerOptions.map((tracker) => (
-                <SelectItem key={tracker} value={tracker}>
-                  {tracker}
-                </SelectItem>
+    <>
+      <IssueOverview
+        data={data}
+        issues={issues}
+        actions={{
+          completionRateClick,
+          inProgressClick,
+          overdueClick,
+          criticalBugsClick,
+          highBugsClick,
+          postReleaseBugsClick,
+        }}
+      />
+      <div className="w-full flex-col justify-start gap-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {/* Tracker Multi-Select Filter */}
+            <MultiSelectFilter
+              options={trackerOptions}
+              selectedValues={trackerFilterValue}
+              onSelectionChange={(values) => {
+                console.log("🚀 ~ IssueTable ~ values:", values);
+                table
+                  .getColumn("tracker")
+                  ?.setFilterValue(values.length > 0 ? values : undefined);
+              }}
+              placeholder="All Trackers"
+            />
+
+            {/* Status Multi-Select Filter */}
+            <MultiSelectFilter
+              options={statusOptions}
+              selectedValues={statusFilterValue}
+              onSelectionChange={(values) => {
+                table
+                  .getColumn("status")
+                  ?.setFilterValue(values.length > 0 ? values : undefined);
+              }}
+              placeholder="All Statuses"
+            />
+
+            {/* Priority Multi-Select Filter */}
+            <MultiSelectFilter
+              options={priorityOptions}
+              selectedValues={priorityFilterValue}
+              onSelectionChange={(values) => {
+                table
+                  .getColumn("priority")
+                  ?.setFilterValue(values.length > 0 ? values : undefined);
+              }}
+              placeholder="All Priorities"
+            />
+
+            {columnFilters.length > 0 && (
+              <>
+                <Separator orientation="vertical" className="mx-2 !h-4" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.resetColumnFilters()}
+                >
+                  Reset
+                  <X className="ml-1" />
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <span className="hidden lg:inline">Customize Columns</span>
+                  <span className="lg:hidden">Columns</span>
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {table
+                  .getAllColumns()
+                  .filter(
+                    (column) =>
+                      typeof column.accessorFn !== "undefined" &&
+                      column.getCanHide()
+                  )
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {
+                          visibleColumns[
+                            column.id as keyof typeof visibleColumns
+                          ]
+                        }
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader className="bg-muted sticky top-0 z-10">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        style={{ width: header.getSize() }}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
               ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={statusFilterValue}
-            onValueChange={(value) => {
-              table
-                .getColumn("status")
-                ?.setFilterValue(value === "all" ? "" : value);
-            }}
-          >
-            <SelectTrigger size="sm" className="w-32" id="status-filter">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {statusOptions.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={assigneeFilterValue}
-            onValueChange={(value) => {
-              table
-                .getColumn("assignee")
-                ?.setFilterValue(value === "all" ? "" : value);
-            }}
-          >
-            <SelectTrigger size="sm" className="w-32" id="assignee-filter">
-              <SelectValue placeholder="All Assignees" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Assignees</SelectItem>
-              {assigneeOptions.map((assignee) => (
-                <SelectItem key={assignee} value={assignee}>
-                  {assignee}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {columnFilters.length > 0 && (
-            <>
-              <Separator orientation="vertical" className="mx-2 !h-4" />
+            </TableHeader>
+            <TableBody className="**:data-[slot=table-cell]:first:w-8">
+              {table.getRowModel().rows?.length ? (
+                <>
+                  {table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </>
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+            Total {table.getFilteredRowModel().rows.length} row(s)
+          </div>
+          <div className="flex w-full items-center gap-8 lg:w-fit mt-4">
+            <div className="hidden items-center gap-2 lg:flex">
+              <Label htmlFor="rows-per-page" className="text-sm font-medium">
+                Rows per page
+              </Label>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </div>
+            <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => table.resetColumnFilters()}
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
               >
-                Reset
-                <X className="ml-1" />
+                <span className="sr-only">Go to first page</span>
+                <ChevronsLeft />
               </Button>
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
-                <ChevronDown />
+              <Button
+                variant="outline"
+                className="size-8"
+                size="icon"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <span className="sr-only">Go to previous page</span>
+                <ChevronLeft />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {visibleColumns[column.id as keyof typeof visibleColumns]}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted sticky top-0 z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="**:data-[slot=table-cell]:first:w-8">
-            {table.getRowModel().rows?.length ? (
-              <>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </>
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-          {table.getFilteredRowModel().rows.length} row(s)
-        </div>
-        <div className="flex w-full items-center gap-8 lg:w-fit mt-4">
-          <div className="hidden items-center gap-2 lg:flex">
-            <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
-            </Label>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => {
-                table.setPageSize(Number(value));
-              }}
-            >
-              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
-                />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex w-fit items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
-          </div>
-          <div className="ml-auto flex items-center gap-2 lg:ml-0">
-            <Button
-              variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to first page</span>
-              <ChevronsLeft />
-            </Button>
-            <Button
-              variant="outline"
-              className="size-8"
-              size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to previous page</span>
-              <ChevronLeft />
-            </Button>
-            <Button
-              variant="outline"
-              className="size-8"
-              size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to next page</span>
-              <ChevronRight />
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden size-8 lg:flex"
-              size="icon"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to last page</span>
-              <ChevronsRight />
-            </Button>
+              <Button
+                variant="outline"
+                className="size-8"
+                size="icon"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Go to next page</span>
+                <ChevronRight />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden size-8 lg:flex"
+                size="icon"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Go to last page</span>
+                <ChevronsRight />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -4,9 +4,9 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { IssueOverview, IssueTable } from "@/components/Issue";
+import { IssueTable } from "@/components/Issue";
 import { useDashboard } from "@/components/DashboardLayout";
-import { Story } from "@/lib/types";
+import { Feature, Story } from "@/lib/types";
 import { getFeatureStatus } from "@/lib/utils";
 import { usePageTitle } from "@/hooks/use-page-title";
 
@@ -71,9 +71,7 @@ export default function FeatureDetail() {
         </div>
       </div>
 
-      <IssueOverview feature={featureData} stories={flattenedStories} />
-
-      <IssueTable data={flattenedStories} />
+      <IssueTable data={featureData as Feature} issues={flattenedStories} />
     </div>
   );
 }

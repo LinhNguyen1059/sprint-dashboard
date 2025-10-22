@@ -30,13 +30,13 @@ export const getFeatureStatus = (status: number) => {
     case FeatureStatus.INPROGRESS:
       return {
         text: "In Progress",
-        class: "text-(--chart-2) border-(--chart-2)/10",
+        class: "text-(--chart-16) border-(--chart-16)/10",
         icon: Loader,
       };
     case FeatureStatus.ONTIME:
       return {
         text: "On Time",
-        class: "text-(--chart-26) border-(--chart-26)/10",
+        class: "text-(--chart-7) border-(--chart-7)/10",
         icon: CircleCheck,
       };
     default:
@@ -50,11 +50,11 @@ export const getFeatureStatus = (status: number) => {
 
 export const visibleColumns = {
   percentDone: "Progress",
-  dueStatus: "Status",
-  urgentBugs: "Urgent bugs",
+  dueStatus: "Due Status",
+  criticalBugs: "Critical bugs",
   highBugs: "High bugs",
   normalBugs: "Normal bugs",
-  ncrBugs: "Post-Release bugs",
+  postRelease: "Post-Release bugs",
 
   tracker: "Tracker",
   status: "Status",
@@ -78,7 +78,7 @@ export const visibleColumns = {
   spentTime: "Time spent",
   totalSpentTime: "Total time spent",
   created: "Created",
-  closed: "Closed",
+  closed: "Closed date",
   lastUpdatedBy: "Last updated by",
   relatedIssues: "Related issues",
   files: "Files",

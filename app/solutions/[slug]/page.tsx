@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 
 import { useDashboard } from "@/components/DashboardLayout";
-import { FeatureChart, FeatureTable } from "@/components/Feature";
+import { FeatureTable } from "@/components/Feature";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function SolutionDetail() {
@@ -34,7 +34,6 @@ export default function SolutionDetail() {
         <h1 className="text-2xl font-bold">{solution.name}</h1>
       </div>
 
-      <FeatureChart data={solution.features} />
       <FeatureTable
         data={solution.features}
         slug={slug as string}

@@ -40,6 +40,7 @@ export interface Issue {
 export interface CombinedIssue extends Issue {
   projectName: string;
   projectSlug: string;
+  dueStatus: number;
 }
 
 // Story now extends Issue, adding story-specific properties
@@ -47,18 +48,17 @@ export interface Story extends CombinedIssue {
   timeSpent: number;
   parent: number;
   issues: Issue[];
-  urgentBugs: number;
+  criticalBugs: number;
   highBugs: number;
   normalBugs: number;
-  ncrBugs: number;
+  postReleaseBugs: number;
 }
 
 export interface Feature extends CombinedIssue {
-  dueStatus: number;
   slug: string;
-  urgentBugs: number;
+  criticalBugs: number;
   highBugs: number;
-  ncrBugs: number;
+  postReleaseBugs: number;
   normalBugs: number;
   stories: Story[];
   others: Issue[];
@@ -89,16 +89,16 @@ export interface Member {
   slug: string;
   name: string;
   timeSpent: number;
-  urgentBugs: number;
+  criticalBugs: number;
   highBugs: number;
-  ncrBugs: number;
+  postReleaseBugs: number;
   issues: CombinedIssue[];
 }
 
 export enum FeatureStatus {
-  INPROGRESS = 0,
-  ONTIME = 1,
-  LATE = 2,
+  INPROGRESS = 1,
+  ONTIME = 2,
+  LATE = 3,
 }
 
 // Component prop interfaces

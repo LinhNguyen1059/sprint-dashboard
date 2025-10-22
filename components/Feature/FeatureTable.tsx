@@ -169,16 +169,16 @@ export function FeatureTable({
       ),
     },
     {
-      accessorKey: "urgentBugs",
+      accessorKey: "criticalBugs",
       header: ({ column }) => (
         <SortableHeader
           column={column}
-          title="Urgent bugs"
+          title="Critical bugs"
           className="w-full justify-end"
         />
       ),
       cell: ({ row }) => (
-        <div className="text-right">{row.original.urgentBugs}</div>
+        <div className="text-right">{row.original.criticalBugs}</div>
       ),
     },
     {
@@ -195,7 +195,7 @@ export function FeatureTable({
       ),
     },
     {
-      accessorKey: "ncrBugs",
+      accessorKey: "postReleaseBugs",
       header: ({ column }) => (
         <SortableHeader
           column={column}
@@ -204,7 +204,7 @@ export function FeatureTable({
         />
       ),
       cell: ({ row }) => (
-        <div className="text-right">{row.original.ncrBugs}</div>
+        <div className="text-right">{row.original.postReleaseBugs}</div>
       ),
     },
   ];

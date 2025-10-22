@@ -1,105 +1,81 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  AlertCircle,
-  Bug,
-  Clock,
-  Flag,
-  List,
-  Play,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { AlertCircle, Clock, Flag, Play, TrendingUp, Zap } from "lucide-react";
+import { Table } from "@tanstack/react-table";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Feature, Story } from "@/lib/types";
+import {
+  CombinedIssue,
+  Feature,
+  FeatureStatus,
+  Member,
+  Story,
+} from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export function IssueOverview({
-  feature,
-  stories,
+  data,
+  issues,
+  actions,
 }: {
-  feature?: Feature;
-  stories: Story[];
+  data: Feature | Story | Member;
+  issues: Story[] | CombinedIssue[];
+  actions?: {
+    completionRateClick?: () => void;
+    inProgressClick?: () => void;
+    overdueClick?: () => void;
+    criticalBugsClick?: () => void;
+    highBugsClick?: () => void;
+    postReleaseBugsClick?: () => void;
+  };
 }) {
   // Calculate metrics for display
   const metrics = useMemo(() => {
-    if (!feature) return null;
+    if (!data) return null;
 
-    const totalStories = feature.stories.length;
-    const totalIssues = stories.length;
-
-    // Count different types of issues
-    const bugCount = stories.filter((item) =>
-      item.tracker.toLowerCase().includes("bug")
-    ).length;
+    const totalIssues = issues.length;
 
     // Count late/closed issues
-    const closedCount = stories.filter(
-      (item) => item.status.toLowerCase() === "closed"
+    const ontimeCount = issues.filter(
+      (issue) => issue.dueStatus === FeatureStatus.ONTIME
     ).length;
 
-    const inProgressCount = stories.filter(
-      (item) => item.status.toLowerCase() === "in progress"
+    const inProgressCount = issues.filter(
+      (issue) => issue.dueStatus === FeatureStatus.INPROGRESS
     ).length;
 
     // Find overdue issues (not closed but past due date)
-    const today = new Date();
-    const overdueCount = stories.filter((item) => {
-      // Check if item is not closed and has a due date
-      if (item.status.toLowerCase() === "closed" || !item.dueDate) {
-        return false;
-      }
-
-      // Parse the due date and compare with today
-      const dueDate = new Date(item.dueDate);
-      return !isNaN(dueDate.getTime()) && dueDate < today;
-    }).length;
+    const overdueCount = issues.filter(
+      (item) => item.dueStatus === FeatureStatus.LATE
+    ).length;
 
     // Calculate completion rate
     const completionRate =
-      totalIssues > 0 ? Math.round((closedCount / totalIssues) * 100) : 0;
+      totalIssues > 0 ? Math.round((ontimeCount / totalIssues) * 100) : 0;
 
     return {
-      totalStories,
-      totalIssues,
-      bugCount,
-      closedCount,
       inProgressCount,
       overdueCount,
       completionRate,
-      // Bug severity metrics from feature data
-      urgentBugs: feature.urgentBugs || 0,
-      highBugs: feature.highBugs || 0,
-      ncrBugs: feature.ncrBugs || 0,
+      // Bug severity metrics from data data
+      criticalBugs: data.criticalBugs || 0,
+      highBugs: data.highBugs || 0,
+      postReleaseBugs: data.postReleaseBugs || 0,
     };
-  }, [feature, stories]);
+  }, [data, issues]);
 
-  if (!feature) return null;
+  if (!data) return null;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-6 md:grid-cols-4 xl:grid-cols-8 gap-4">
-      <Card className="shadow-none py-4 gap-4">
-        <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Total Issues</CardTitle>
-          <List className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="px-4">
-          <div className="text-2xl font-bold">{metrics?.totalIssues}</div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none py-4 gap-4">
-        <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Bugs</CardTitle>
-          <Bug className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="px-4">
-          <div className="text-2xl font-bold">{metrics?.bugCount}</div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none py-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <Card
+        className={cn(
+          "shadow-none py-4 gap-4",
+          !!actions?.completionRateClick && "hover:cursor-pointer"
+        )}
+        onClick={actions?.completionRateClick}
+      >
         <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Completion</CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -109,7 +85,13 @@ export function IssueOverview({
         </CardContent>
       </Card>
 
-      <Card className="shadow-none py-4 gap-4">
+      <Card
+        className={cn(
+          "shadow-none py-4 gap-4",
+          !!actions?.inProgressClick && "hover:cursor-pointer"
+        )}
+        onClick={actions?.inProgressClick}
+      >
         <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">In Progress</CardTitle>
           <Play className="h-4 w-4 text-muted-foreground" />
@@ -119,20 +101,52 @@ export function IssueOverview({
         </CardContent>
       </Card>
 
-      {/* Bug Severity Cards */}
-      <Card className="shadow-none py-4 gap-4">
+      <Card
+        className={cn(
+          "shadow-none py-4 gap-4",
+          !!actions?.overdueClick && "hover:cursor-pointer"
+        )}
+        onClick={actions?.overdueClick}
+      >
         <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Urgent Bugs</CardTitle>
-          <Zap className="h-4 w-4 text-red-500" />
+          <CardTitle className="text-sm font-medium">
+            Total Overdue Issues
+          </CardTitle>
+          <Clock className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent className="px-4">
           <div className="text-2xl font-bold text-red-500">
-            {metrics?.urgentBugs}
+            {metrics?.overdueCount}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="shadow-none py-4 gap-4">
+      {/* Bug Severity Cards */}
+      <Card
+        className={cn(
+          "shadow-none py-4 gap-4",
+          !!actions?.criticalBugsClick && "hover:cursor-pointer"
+        )}
+        onClick={actions?.criticalBugsClick}
+      >
+        <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-medium">Critical Bugs</CardTitle>
+          <Zap className="h-4 w-4 text-red-500" />
+        </CardHeader>
+        <CardContent className="px-4">
+          <div className="text-2xl font-bold text-red-500">
+            {metrics?.criticalBugs}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card
+        className={cn(
+          "shadow-none py-4 gap-4",
+          !!actions?.highBugsClick && "hover:cursor-pointer"
+        )}
+        onClick={actions?.highBugsClick}
+      >
         <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">High Bugs</CardTitle>
           <Flag className="h-4 w-4 text-orange-500" />
@@ -144,25 +158,21 @@ export function IssueOverview({
         </CardContent>
       </Card>
 
-      <Card className="shadow-none py-4 gap-4">
+      <Card
+        className={cn(
+          "shadow-none py-4 gap-4",
+          !!actions?.postReleaseBugsClick && "hover:cursor-pointer"
+        )}
+        onClick={actions?.postReleaseBugsClick}
+      >
         <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">NCR Bugs</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Post-Release Bugs
+          </CardTitle>
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="px-4">
-          <div className="text-2xl font-bold">{metrics?.ncrBugs}</div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none py-4 gap-4">
-        <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Overdue Issues</CardTitle>
-          <Clock className="h-4 w-4 text-red-500" />
-        </CardHeader>
-        <CardContent className="px-4">
-          <div className="text-2xl font-bold text-red-500">
-            {metrics?.overdueCount}
-          </div>
+          <div className="text-2xl font-bold">{metrics?.postReleaseBugs}</div>
         </CardContent>
       </Card>
     </div>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent
+  ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Feature, FeatureStatus } from "@/lib/types";
 
@@ -15,13 +15,13 @@ const bugConfig = {
   development: {
     key: "development",
     label: "Development",
-    color: "var(--chart-5)"
+    color: "var(--chart-5)",
   },
-  ncr: {
-    key: "ncr",
+  postRelease: {
+    key: "postRelease",
     label: "Post-Release",
-    color: "var(--chart-1)"
-  }
+    color: "var(--chart-1)",
+  },
 };
 
 // Status chart configuration
@@ -29,18 +29,18 @@ const dueStatusConfig = {
   inprogress: {
     key: "inprogress",
     label: "In Progress",
-    color: "var(--chart-2)"
+    color: "var(--chart-2)",
   },
   ontime: {
     key: "ontime",
     label: "On Time",
-    color: "var(--chart-26)"
+    color: "var(--chart-26)",
   },
   late: {
     key: "late",
     label: "Late",
-    color: "var(--chart-11)"
-  }
+    color: "var(--chart-11)",
+  },
 };
 
 // Generate distinct colors for features
@@ -75,7 +75,7 @@ const generateFeatureColor = (index: number) => {
     "var(--chart-27)",
     "var(--chart-28)",
     "var(--chart-29)",
-    "var(--chart-30)"
+    "var(--chart-30)",
   ];
   return colors[index % colors.length];
 };
@@ -92,7 +92,7 @@ const generateTimeSpentConfig = (features: Feature[]) => {
     const key = feature.subject;
     config[key] = {
       label: feature.subject,
-      color: generateFeatureColor(index)
+      color: generateFeatureColor(index),
     };
   });
 
@@ -102,7 +102,7 @@ const generateTimeSpentConfig = (features: Feature[]) => {
 function ChartItem({
   data,
   config,
-  labelDataKey = "percent"
+  labelDataKey = "percent",
 }: {
   data: {
     name: string;
@@ -162,20 +162,20 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           name: dueStatusConfig.inprogress.key,
           value: 0,
           percent: 0,
-          fill: dueStatusConfig.inprogress.color
+          fill: dueStatusConfig.inprogress.color,
         },
         {
           name: dueStatusConfig.ontime.key,
           value: 0,
           percent: 0,
-          fill: dueStatusConfig.ontime.color
+          fill: dueStatusConfig.ontime.color,
         },
         {
           name: dueStatusConfig.late.key,
           value: 0,
           percent: 0,
-          fill: dueStatusConfig.late.color
-        }
+          fill: dueStatusConfig.late.color,
+        },
       ];
     }
 
@@ -196,20 +196,20 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
         name: dueStatusConfig.inprogress.key,
         value: inProgressCount,
         percent: (inProgressCount / features.length) * 100,
-        fill: dueStatusConfig.inprogress.color
+        fill: dueStatusConfig.inprogress.color,
       },
       {
         name: dueStatusConfig.ontime.key,
         value: onTimeCount,
         percent: (onTimeCount / features.length) * 100,
-        fill: dueStatusConfig.ontime.color
+        fill: dueStatusConfig.ontime.color,
       },
       {
         name: dueStatusConfig.late.key,
         value: lateCount,
         percent: (lateCount / features.length) * 100,
-        fill: dueStatusConfig.late.color
-      }
+        fill: dueStatusConfig.late.color,
+      },
     ];
   }, [features]);
 
@@ -232,7 +232,7 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
       name: feature.subject,
       value: feature.totalSpentTime,
       percent: (feature.totalSpentTime / totalSpentTime) * 100,
-      fill: generateFeatureColor(index)
+      fill: generateFeatureColor(index),
     }));
   }, [features]);
 
@@ -249,42 +249,42 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
           name: bugConfig.development.key,
           value: 0,
           percent: 0,
-          fill: bugConfig.development.color
+          fill: bugConfig.development.color,
         },
         {
-          name: bugConfig.ncr.key,
+          name: bugConfig.postRelease.key,
           value: 0,
           percent: 0,
-          fill: bugConfig.ncr.color
-        }
+          fill: bugConfig.postRelease.color,
+        },
       ];
     }
 
     // Calculate total development bugs (urgent + high + normal)
     const totalDevelopmentBugs = features.reduce((sum, feature) => {
-      return sum + feature.urgentBugs + feature.highBugs + feature.normalBugs;
+      return sum + feature.criticalBugs + feature.highBugs + feature.normalBugs;
     }, 0);
 
-    // Calculate total NCR bugs
-    const totalNcrBugs = features.reduce((sum, feature) => {
-      return sum + feature.ncrBugs;
+    // Calculate total Post Release bugs
+    const totalpostReleaseBugs = features.reduce((sum, feature) => {
+      return sum + feature.postReleaseBugs;
     }, 0);
 
-    const total = totalDevelopmentBugs + totalNcrBugs;
+    const total = totalDevelopmentBugs + totalpostReleaseBugs;
 
     return [
       {
         name: bugConfig.development.key,
         value: totalDevelopmentBugs,
         percent: (totalDevelopmentBugs / total) * 100,
-        fill: bugConfig.development.color
+        fill: bugConfig.development.color,
       },
       {
-        name: bugConfig.ncr.key,
-        value: totalNcrBugs,
-        percent: (totalNcrBugs / total) * 100,
-        fill: bugConfig.ncr.color
-      }
+        name: bugConfig.postRelease.key,
+        value: totalpostReleaseBugs,
+        percent: (totalpostReleaseBugs / total) * 100,
+        fill: bugConfig.postRelease.color,
+      },
     ];
   }, [features]);
 

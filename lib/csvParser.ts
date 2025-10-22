@@ -112,6 +112,11 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               ? parseFloat(row["Story points"])
               : 0,
             projectSlug: projectSlug,
+            dueStatus: calculateFeatureStatus({
+              closedDate: row["Closed"],
+              dueDate: row["Due date"],
+              status: row["Status"],
+            }),
           };
         });
 
@@ -277,10 +282,10 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
           status: epic.status,
         }),
         slug: formatValueToSlug(epic.subject),
-        urgentBugs: 0,
+        criticalBugs: 0,
         highBugs: 0,
         normalBugs: 0,
-        ncrBugs: 0,
+        postReleaseBugs: 0,
         stories: [],
         others: [],
       };
@@ -293,17 +298,18 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
       // Get child issues for this story
       const childIssues = issuesByParent[story.id] || [];
 
-      // Count bugs and NCR issues for this story
-      let urgentCount = 0;
+      let criticalCount = 0;
       let highCount = 0;
       let normalCount = 0;
-      let ncrCount = 0;
+      let postReleaseCount = 0;
 
       childIssues.forEach((issue) => {
         // Check if the issue is a bug with priority "Urgent" or "High"
         if (issue.tracker === "Bug") {
           if (issue.priority === "Urgent") {
-            urgentCount += 1;
+            criticalCount += 1;
+          } else if (issue.priority === "Immediate") {
+            criticalCount += 1;
           } else if (issue.priority === "High") {
             highCount += 1;
           } else if (issue.priority === "Normal") {
@@ -311,9 +317,9 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
           }
         }
 
-        // Check if the issue has category "NCR"
-        if (issue.issueCategories === "NCR") {
-          ncrCount += 1;
+        // Check if the issue has category "Post-Release Issue"
+        if (issue.issueCategories === "Post-Release Issue") {
+          postReleaseCount += 1;
         }
       });
 
@@ -323,10 +329,10 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         timeSpent: story.totalSpentTime,
         parent: story.parentTask || 0,
         issues: childIssues,
-        urgentBugs: urgentCount,
+        criticalBugs: criticalCount,
         highBugs: highCount,
         normalBugs: normalCount,
-        ncrBugs: ncrCount,
+        postReleaseBugs: postReleaseCount,
       };
     });
 
@@ -347,10 +353,10 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
       feature.stories.push(story);
 
       // Aggregate bug counts from the story to the feature
-      feature.urgentBugs += story.urgentBugs || 0;
+      feature.criticalBugs += story.criticalBugs || 0;
       feature.highBugs += story.highBugs || 0;
       feature.normalBugs += story.normalBugs || 0;
-      feature.ncrBugs += story.ncrBugs || 0;
+      feature.postReleaseBugs += story.postReleaseBugs || 0;
     }
   });
 
@@ -362,7 +368,9 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
 
       if (task.tracker === "Bug") {
         if (task.priority === "Urgent") {
-          feature.urgentBugs += 1;
+          feature.criticalBugs += 1;
+        } else if (task.priority === "Immediate") {
+          feature.criticalBugs += 1;
         } else if (task.priority === "High") {
           feature.highBugs += 1;
         } else if (task.priority === "Normal") {
@@ -370,9 +378,9 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         }
       }
 
-      // Check if the task has category "NCR"
-      if (task.issueCategories === "NCR") {
-        feature.ncrBugs += 1;
+      // Check if the task has category "Post-Release Issue"
+      if (task.issueCategories === "Post-Release Issue") {
+        feature.postReleaseBugs += 1;
       }
     }
   });
@@ -544,9 +552,9 @@ export function calculateMembers(
             slug: formatValueToSlug(assignee),
             name: assignee,
             timeSpent: 0,
-            urgentBugs: 0,
+            criticalBugs: 0,
             highBugs: 0,
-            ncrBugs: 0,
+            postReleaseBugs: 0,
             issues: [],
           };
         }
@@ -569,9 +577,9 @@ export function calculateMembers(
                 slug: formatValueToSlug(doneByName),
                 name: doneByName,
                 timeSpent: 0,
-                urgentBugs: 0,
+                criticalBugs: 0,
                 highBugs: 0,
-                ncrBugs: 0,
+                postReleaseBugs: 0,
                 issues: [],
               };
             }
@@ -585,7 +593,6 @@ export function calculateMembers(
       });
     }
 
-    // Count bugs and NCR issues for members
     if (issue.tracker === "Bug") {
       // Process assignee for bug counting
       if (issue.assignee && issue.assignee.trim() !== "") {
@@ -598,15 +605,18 @@ export function calculateMembers(
               slug: formatValueToSlug(assignee),
               name: assignee,
               timeSpent: 0,
-              urgentBugs: 0,
+              criticalBugs: 0,
               highBugs: 0,
-              ncrBugs: 0,
+              postReleaseBugs: 0,
               issues: [],
             };
           }
 
           if (issue.priority === "Urgent") {
-            memberMap[assignee].urgentBugs += 1;
+            memberMap[assignee].criticalBugs += 1;
+          }
+          if (issue.priority === "Immediate") {
+            memberMap[assignee].criticalBugs += 1;
           } else if (issue.priority === "High") {
             memberMap[assignee].highBugs += 1;
           }
@@ -627,16 +637,16 @@ export function calculateMembers(
                   slug: formatValueToSlug(doneByName),
                   name: doneByName,
                   timeSpent: 0,
-                  urgentBugs: 0,
+                  criticalBugs: 0,
                   highBugs: 0,
-                  ncrBugs: 0,
+                  postReleaseBugs: 0,
                   issues: [],
                 };
               }
 
               // Only count the bug once per member
               if (issue.priority === "Urgent") {
-                memberMap[doneByName].urgentBugs += 1;
+                memberMap[doneByName].criticalBugs += 1;
               } else if (issue.priority === "High") {
                 memberMap[doneByName].highBugs += 1;
               }
@@ -646,9 +656,9 @@ export function calculateMembers(
       }
     }
 
-    // Count NCR issues for members
-    if (issue.issueCategories === "NCR") {
-      // Process assignee for NCR counting
+    // Count Post-Release issues for members
+    if (issue.issueCategories === "Post-Release Issue") {
+      // Process assignee for Post-Release Issue counting
       if (issue.assignee && issue.assignee.trim() !== "") {
         const assignee = issue.assignee.trim();
 
@@ -659,17 +669,17 @@ export function calculateMembers(
               slug: formatValueToSlug(assignee),
               name: assignee,
               timeSpent: 0,
-              urgentBugs: 0,
+              criticalBugs: 0,
               highBugs: 0,
-              ncrBugs: 0,
+              postReleaseBugs: 0,
               issues: [],
             };
           }
-          memberMap[assignee].ncrBugs += 1;
+          memberMap[assignee].postReleaseBugs += 1;
         }
       }
 
-      // Process doneBy for NCR counting
+      // Process doneBy for Post-Release counting
       if (issue.doneBy && issue.doneBy.trim() !== "") {
         const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
         doneByNames.forEach((name) => {
@@ -683,14 +693,14 @@ export function calculateMembers(
                   slug: formatValueToSlug(doneByName),
                   name: doneByName,
                   timeSpent: 0,
-                  urgentBugs: 0,
+                  criticalBugs: 0,
                   highBugs: 0,
-                  ncrBugs: 0,
+                  postReleaseBugs: 0,
                   issues: [],
                 };
               }
-              // Only count the NCR once per member
-              memberMap[doneByName].ncrBugs += 1;
+              // Only count the Post-Release issue once per member
+              memberMap[doneByName].postReleaseBugs += 1;
             }
           }
         });

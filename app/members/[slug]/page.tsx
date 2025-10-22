@@ -4,9 +4,8 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 
 import { useDashboard } from "@/components/DashboardLayout";
+import { IssueTable } from "@/components/Issue";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { MemberTable } from "@/components/Member/MemberTable";
-import { MembetOverview } from "@/components/Member/MembetOverview";
 
 export default function FeatureDetail() {
   const params = useParams();
@@ -42,8 +41,7 @@ export default function FeatureDetail() {
         </div>
       </div>
 
-      <MembetOverview member={memberData} />
-      <MemberTable data={memberData?.issues} />
+      <IssueTable data={memberData} issues={memberData?.issues} />
     </div>
   );
 }

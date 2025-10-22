@@ -21,8 +21,8 @@ export default function Projects() {
     project.features.forEach((feature) => {
       totalProgress += feature.percentDone || 0;
       totalDevelopmentBugs +=
-        feature.urgentBugs + feature.highBugs + feature.normalBugs;
-      totalPostReleaseBugs += feature.ncrBugs;
+        feature.criticalBugs + feature.highBugs + feature.normalBugs;
+      totalPostReleaseBugs += feature.postReleaseBugs;
       totalSpentTime += feature.totalSpentTime;
       if (feature.dueStatus !== FeatureStatus.INPROGRESS) {
         isInprogress = false;
