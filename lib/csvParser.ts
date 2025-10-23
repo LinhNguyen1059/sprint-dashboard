@@ -9,7 +9,8 @@ import {
   Team,
   Member,
 } from "./types";
-import { formatValueToSlug } from "./utils";
+import { flattenedIssues, formatValueToSlug } from "./utils";
+import { getDevelopers, getMembers } from "./teams";
 
 // Define a type for our CSV row data
 type CSVRowData = Record<string, string>;
@@ -257,6 +258,11 @@ function calculateFeatureStatus({
   return FeatureStatus.INPROGRESS;
 }
 
+/**
+ * Process issues within a project and calculate feature metrics
+ * @param projectIssues Array of issues within a project
+ * @returns Processed issues with feature metrics
+ */
 function processProjectIssues(projectIssues: CombinedIssue[]) {
   // Group issues by parent task within this project
   const issuesByParent: Record<number, CombinedIssue[]> = {};
@@ -389,6 +395,40 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
 }
 
 /**
+ * Calculate members in a project
+ * @param issues Array of issues within a project
+ * @returns Members in the project
+ */
+/**
+ * Calculate members in a project based on issue assignees
+ * @param issues Array of issues within a project
+ * @returns Object containing members and their counts
+ */
+function calculateMembersInProject(issues: CombinedIssue[]) {
+  const uniqueAssignees = new Set<string>();
+  issues.forEach((issue) => {
+    if (
+      (issue.assignee && issue.assignee.trim() !== "") ||
+      (issue.doneBy && issue.doneBy.trim() !== "")
+    ) {
+      uniqueAssignees.add(issue.assignee.trim());
+      uniqueAssignees.add(issue.doneBy.trim());
+    }
+  });
+  const allMembers = getMembers();
+  const developers = getDevelopers();
+  const members = allMembers.filter((member) => uniqueAssignees.has(member));
+  const totalMembers = members.length || 0;
+  const totalDevs = developers.filter((dev) => uniqueAssignees.has(dev)).length;
+
+  return {
+    members,
+    totalMembers,
+    totalDevs
+  };
+}
+
+/**
  * Calculate projects from combined issues data
  * @param issues Array of combined issues with project info
  * @returns Array of projects grouped by project name
@@ -411,13 +451,8 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
     const projectSlug = formatValueToSlug(projectName);
 
     // Count unique members (assignees) in this project
-    const uniqueAssignees = new Set<string>();
-    projectIssues.forEach((issue) => {
-      if (issue.assignee && issue.assignee.trim() !== "") {
-        uniqueAssignees.add(issue.assignee.trim());
-      }
-    });
-    const totalMembers = uniqueAssignees.size;
+    const { totalMembers, totalDevs } =
+      calculateMembersInProject(projectIssues);
 
     // Process issues to extract features, stories and other tasks
     const { features } = processProjectIssues(projectIssues);
@@ -428,6 +463,7 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
       slug: projectSlug,
       totalItems: projectIssues.length,
       totalMembers: totalMembers,
+      totalDevs: totalDevs,
       features: features,
     };
 
@@ -468,22 +504,19 @@ export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
     const taggedFeatures = epics.filter((feature) =>
       feature.tags.includes(tagName)
     );
+    const issues = flattenedIssues(taggedFeatures);
 
     // Count unique members (assignees) for this solution
-    const uniqueAssignees = new Set<string>();
-    issues.forEach((issue) => {
-      if (issue.assignee && issue.assignee.trim() !== "") {
-        uniqueAssignees.add(issue.assignee.trim());
-      }
-    });
+    const { totalMembers, totalDevs } = calculateMembersInProject(issues);
 
     // Create the solution structure
     const solution: Solution = {
       name: tagName,
       slug: tagSlug,
       totalItems: issues.length,
-      totalMembers: uniqueAssignees.size,
-      features: taggedFeatures,
+      totalMembers: totalMembers,
+      totalDevs: totalDevs,
+      features: taggedFeatures
     };
 
     solutions.push(solution);
@@ -539,6 +572,8 @@ export function calculateMembers(
   // Create a map of member names to their stats
   const memberMap: Record<string, Member> = {};
 
+  const devMembers = getDevelopers();
+
   // Collect all unique member names from assignee and doneBy fields
   issues.forEach((issue) => {
     // Process assignee
@@ -556,6 +591,7 @@ export function calculateMembers(
             highBugs: 0,
             postReleaseBugs: 0,
             issues: [],
+            isDev: devMembers.includes(assignee),
           };
         }
         memberMap[assignee].issues.push(issue);
@@ -581,6 +617,7 @@ export function calculateMembers(
                 highBugs: 0,
                 postReleaseBugs: 0,
                 issues: [],
+                isDev: devMembers.includes(doneByName),
               };
             }
             // Only add the issue if it's not already in the array
@@ -609,6 +646,7 @@ export function calculateMembers(
               highBugs: 0,
               postReleaseBugs: 0,
               issues: [],
+              isDev: devMembers.includes(assignee),
             };
           }
 
@@ -641,6 +679,7 @@ export function calculateMembers(
                   highBugs: 0,
                   postReleaseBugs: 0,
                   issues: [],
+                  isDev: devMembers.includes(doneByName),
                 };
               }
 
@@ -673,6 +712,7 @@ export function calculateMembers(
               highBugs: 0,
               postReleaseBugs: 0,
               issues: [],
+              isDev: devMembers.includes(assignee),
             };
           }
           memberMap[assignee].postReleaseBugs += 1;
@@ -697,6 +737,7 @@ export function calculateMembers(
                   highBugs: 0,
                   postReleaseBugs: 0,
                   issues: [],
+                  isDev: devMembers.includes(doneByName),
                 };
               }
               // Only count the Post-Release issue once per member

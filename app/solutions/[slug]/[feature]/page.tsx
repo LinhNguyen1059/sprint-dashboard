@@ -6,8 +6,8 @@ import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { IssueTable } from "@/components/Issue";
 import { useDashboard } from "@/components/DashboardLayout";
-import { Feature, Story } from "@/lib/types";
-import { getFeatureStatus } from "@/lib/utils";
+import { Feature } from "@/lib/types";
+import { flattenedIssues, getFeatureStatus } from "@/lib/utils";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function FeatureDetail() {
@@ -29,25 +29,7 @@ export default function FeatureDetail() {
       return [];
     }
 
-    const allItems: Story[] = [];
-
-    featureData.stories.forEach((story) => {
-      allItems.push(story);
-
-      story.issues.forEach((issue) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        allItems.push(issue);
-      });
-    });
-
-    featureData.others.forEach((issue) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      allItems.push(issue);
-    });
-
-    return allItems;
+    return flattenedIssues([featureData]);
   }, [featureData]);
 
   const featureStatus = useMemo(() => {

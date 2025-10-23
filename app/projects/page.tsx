@@ -17,6 +17,7 @@ export default function Projects() {
     let totalSpentTime = 0;
     let isInprogress = true;
     let countOnTime = 0;
+    let totalCriticalBugs = 0;
 
     project.features.forEach((feature) => {
       totalProgress += feature.percentDone || 0;
@@ -30,6 +31,7 @@ export default function Projects() {
       if (feature.dueStatus === FeatureStatus.ONTIME) {
         countOnTime++;
       }
+      totalCriticalBugs += feature.criticalBugs;
     });
 
     const averageFeatureProgress =
@@ -37,16 +39,15 @@ export default function Projects() {
     const percentOnTime = Math.round((countOnTime / totalFeatures) * 100);
 
     return {
-      name: project.name,
-      slug: project.slug,
+      ...project,
       totalFeatures,
       averageFeatureProgress,
       totalDevelopmentBugs,
+      totalCriticalBugs,
       totalPostReleaseBugs,
       totalSpentTime,
       isInprogress,
       percentOnTime,
-      totalMembers: project.totalMembers,
     };
   });
 

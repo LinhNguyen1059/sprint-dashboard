@@ -26,7 +26,7 @@ export const TEAMS = [
       "Thang Do",
       "Ly Nguyen",
       "Van Nguyen",
-      "Quang L�",
+      "Quang Lê",
       "Nhut Do",
       "HNghia Nguyen",
       "Minh Ha",
@@ -73,3 +73,10 @@ export const TEAMS = [
     ],
   },
 ];
+
+export const getMembers = () => TEAMS.flatMap((team) => team.members);
+
+export const getDevelopers = () =>
+  TEAMS.filter(
+    (team) => team.name !== "TESTER" && team.name !== "Data Mining"
+  ).flatMap((team) => team.members);

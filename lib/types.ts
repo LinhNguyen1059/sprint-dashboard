@@ -69,16 +69,11 @@ export interface Project {
   slug: string;
   totalItems: number;
   totalMembers: number;
+  totalDevs: number;
   features: Feature[];
 }
 
-export interface Solution {
-  name: string;
-  slug: string;
-  totalItems: number;
-  totalMembers: number;
-  features: Feature[];
-}
+export type Solution = Project
 
 export interface Team {
   name: string;
@@ -93,6 +88,7 @@ export interface Member {
   highBugs: number;
   postReleaseBugs: number;
   issues: CombinedIssue[];
+  isDev: boolean;
 }
 
 export enum FeatureStatus {

@@ -17,6 +17,7 @@ export default function Solutions() {
     let totalSpentTime = 0;
     let isInprogress = true;
     let countOnTime = 0;
+    let totalCriticalBugs = 0;
 
     solution.features.forEach((feature) => {
       totalProgress += feature.percentDone || 0;
@@ -30,6 +31,7 @@ export default function Solutions() {
       if (feature.dueStatus === FeatureStatus.ONTIME) {
         countOnTime++;
       }
+      totalCriticalBugs += feature.criticalBugs;
     });
 
     const averageFeatureProgress =
@@ -41,6 +43,7 @@ export default function Solutions() {
       totalFeatures,
       averageFeatureProgress,
       totalDevelopmentBugs,
+      totalCriticalBugs,
       totalPostReleaseBugs,
       totalSpentTime,
       isInprogress,

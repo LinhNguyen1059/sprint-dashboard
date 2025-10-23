@@ -2,24 +2,29 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Bug, Clock, Loader } from "lucide-react";
+import { Bug, Clock, Loader, Users } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Project } from "@/lib/types";
 
-export interface Metrics {
-  name: string;
-  slug: string;
+export interface Metrics extends Project {
   totalFeatures: number;
   averageFeatureProgress: number;
   totalDevelopmentBugs: number;
   totalPostReleaseBugs: number;
   totalSpentTime: number;
+  totalCriticalBugs: number;
   isInprogress: boolean;
   percentOnTime: number;
-  totalMembers: number;
 }
 
 interface Props {
@@ -34,107 +39,117 @@ export default function CardOverview({ metrics, slug }: Props) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {metrics.map((metric) => (
-        <Link
-          key={metric.slug}
-          href={`/${slug}/${metric.slug}`}
-          className="block"
-        >
-          <Card className="h-full shadow-none gap-0 hover:shadow-sm py-4">
-            <CardHeader className="pb-2 px-4">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">{metric.name}</CardTitle>
-                {metric.isInprogress ? (
-                  <Badge
-                    variant="outline"
-                    className="text-(--chart-2) border-(--chart-2)/10 px-1.5"
-                  >
-                    <Loader />
-                    In Progress
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "px-1.5",
-                      metric.percentOnTime >= 90
-                        ? "text-green-500 border-green-100"
-                        : "text-orange-500 border-orange-100"
-                    )}
-                  >
-                    {metric.percentOnTime}% Features On Time
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="px-4">
-              <div className="flex flex-col gap-3">
-                <div>
-                  <div className="font-medium">
-                    {metric.totalFeatures} Features
+      {metrics.map((metric) => {
+        const maxAcceptableBugs = metric.totalDevs * 5;
+        const quotaUsed = (metric.totalCriticalBugs / maxAcceptableBugs) * 100;
+        const quotaHealth = 100 - quotaUsed;
+
+        let color = "";
+        if (quotaHealth >= 90) {
+          color = "text-green-700 border-green-700/10";
+        } else if (quotaHealth >= 70) {
+          color = "text-orange-500 border-orange-500/10";
+        } else {
+          color = "text-red-500 border-red-500/10";
+        }
+
+        return (
+          <Link
+            key={metric.slug}
+            href={`/${slug}/${metric.slug}`}
+            className="block"
+          >
+            <Card className="h-full shadow-none gap-0 hover:shadow-sm py-4">
+              <CardHeader className="pb-4 px-4">
+                <CardTitle className="text-xl">{metric.name}</CardTitle>
+                <CardDescription
+                  className={cn(
+                    "text-sm",
+                    metric.isInprogress && "text-blue-500",
+                    metric.percentOnTime >= 90
+                      ? "text-green-700"
+                      : "text-orange-500"
+                  )}
+                >
+                  {metric.isInprogress
+                    ? "In Progress"
+                    : `${metric.percentOnTime}% Features On Time`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <div className="font-medium text-lg">
+                      {metric.totalFeatures} Features
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        value={metric.averageFeatureProgress}
+                        className="h-2 bg-primary/10"
+                        progressClassName="bg-blue-500"
+                      />
+                      <span className="font-medium text-xs">
+                        {metric.averageFeatureProgress}%
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Progress
-                      value={metric.averageFeatureProgress}
-                      className="h-2 bg-primary/10"
-                      progressClassName="bg-blue-500"
-                    />
-                    <span className="font-medium text-xs">
-                      {metric.averageFeatureProgress}%
-                    </span>
+                  <div>
+                    <div className="text-sm font-medium mb-1 flex items-center gap-1">
+                      <Bug size={14} /> Critical Bugs
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline" className={color}>
+                        {metric.totalCriticalBugs} / {maxAcceptableBugs}
+                        <span>Pre-Release</span>
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-(--chart-1) border-(--chart-1)/10"
+                      >
+                        {metric.totalPostReleaseBugs}
+                        <span>Post-Release</span>
+                      </Badge>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="font-medium mb-1">Bugs</div>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge
-                      variant="secondary"
-                      className="text-(--chart-5) bg-(--chart-5)/10"
-                    >
-                      <Bug className="h-4 w-4" />
-                      {metric.totalDevelopmentBugs}
-                      <span>Development</span>
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="text-(--chart-1) bg-(--chart-1)/10"
-                    >
-                      <Bug className="h-4 w-4" />
-                      {metric.totalPostReleaseBugs}
-                      <span>Post-Release</span>
-                    </Badge>
+                  <div>
+                    <div className="text-sm font-medium flex items-center gap-1">
+                      <Clock size={14} /> Spent time
+                    </div>
+                    <div className="flex items-center gap-1 text-sm font-medium text-green-700">
+                      {metric.totalSpentTime.toFixed(2)} hrs
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="font-medium">Spent time</div>
-                  <div className="flex items-center gap-1 font-medium text-green-700">
-                    <Clock className="h-4 w-4" />
-                    {metric.totalSpentTime.toFixed(2)} hrs
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex -space-x-2">
-                    <Image src="/male.png" alt="Male" width={32} height={32} />
-                    <Image
-                      src="/female.png"
-                      alt="Male"
-                      width={32}
-                      height={32}
-                    />
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-xs">+{metric.totalMembers}</span>
+                  <div>
+                    <div className="text-sm font-medium mb-1 flex items-center gap-1">
+                      <Users size={14} /> Teams
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="text-blue-500 bg-blue-500/10"
+                      >
+                        <span>{metric.totalDevs} dev(s)</span>
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-pink-500 bg-pink-500/10"
+                      >
+                        <span>
+                          {metric.totalMembers - metric.totalDevs} tester(s)
+                        </span>
+                      </Badge>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              </CardContent>
+            </Card>
+          </Link>
+        );
+      })}
     </div>
   );
 }

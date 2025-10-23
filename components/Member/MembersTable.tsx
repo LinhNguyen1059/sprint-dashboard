@@ -54,6 +54,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Badge } from "../ui/badge";
 
 const visibleColumns = {
   name: "Member name",
@@ -98,27 +99,50 @@ const columns: ColumnDef<Member>[] = [
     accessorKey: "name",
     header: ({ column }) => <SortableHeader column={column} title="Name" />,
     cell: ({ row }) => (
-      <Link
-        href={`/members/${row.original.slug}`}
-        className="hover:underline font-medium"
-      >
-        {row.original.name}
-      </Link>
+      <div className="min-w-80">
+        <Link
+          href={`/members/${row.original.slug}`}
+          className="hover:underline font-medium"
+        >
+          {row.original.name}
+        </Link>
+      </div>
     ),
-    filterFn: "includesString", // Add filter function for string matching
+    filterFn: "includesString",
+    enableHiding: false,
+  },
+  {
+    accessorKey: "role",
+    header: "Role",
+    cell: ({ row }) => (
+      <Badge
+        variant="secondary"
+        className={cn(
+          row.original.isDev
+            ? "text-blue-500 bg-blue-500/10"
+            : "text-pink-500 bg-pink-500/10"
+        )}
+      >
+        {row.original.isDev ? "Developer" : "Tester"}
+      </Badge>
+    ),
+    enableHiding: false,
   },
   {
     accessorKey: "ontimePercent",
     header: () => <div className="text-right">% Tasks On Time</div>,
     cell: ({ row }) => {
       const ontimeCount = row.original.issues.filter(
-        (issue) => issue.dueStatus === FeatureStatus.ONTIME
+        (issue) =>
+          (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
+          issue.dueStatus === FeatureStatus.ONTIME
       ).length;
       const totalCount = row.original.issues.length;
       const percent = Math.round((ontimeCount / totalCount) * 100);
 
       return <div className="text-right">{percent}%</div>;
     },
+    enableHiding: false,
   },
   {
     accessorKey: "timeSpent",
@@ -131,7 +155,7 @@ const columns: ColumnDef<Member>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-right">{row.original.timeSpent.toFixed(2)} hrs</div>
-    ),
+    )
   },
   {
     accessorKey: "criticalBugs",
@@ -144,7 +168,7 @@ const columns: ColumnDef<Member>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-right">{row.original.criticalBugs}</div>
-    ),
+    )
   },
   {
     accessorKey: "highBugs",
@@ -155,9 +179,7 @@ const columns: ColumnDef<Member>[] = [
         className="w-full justify-end"
       />
     ),
-    cell: ({ row }) => (
-      <div className="text-right">{row.original.highBugs}</div>
-    ),
+    cell: ({ row }) => <div className="text-right">{row.original.highBugs}</div>
   },
   {
     accessorKey: "postReleaseBugs",
@@ -170,8 +192,8 @@ const columns: ColumnDef<Member>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-right">{row.original.postReleaseBugs}</div>
-    ),
-  },
+    )
+  }
 ];
 
 export function MembersTable({ data: initialData }: { data: Member[] }) {

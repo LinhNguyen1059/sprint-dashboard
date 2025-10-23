@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { FeatureStatus } from "./types";
+import { CombinedIssue, Feature, FeatureStatus, Story } from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
 
 export function cn(...inputs: ClassValue[]) {
@@ -54,7 +54,7 @@ export const visibleColumns = {
   criticalBugs: "Critical bugs",
   highBugs: "High bugs",
   normalBugs: "Normal bugs",
-  postRelease: "Post-Release bugs",
+  postReleaseBugs: "Post-Release bugs",
 
   tracker: "Tracker",
   status: "Status",
@@ -89,6 +89,7 @@ export const visibleColumns = {
   issueCategories: "Issue categories",
   private: "Private",
   storyPoints: "Story points",
+  ontimePercent: "% Tasks On Time",
 };
 
 // Chart color utilities
@@ -134,3 +135,31 @@ export const getChartColors = (count: number): string[] => {
 };
 
 export const bugTrackerUrl = "https://bugtracker.i3international.com/issues";
+
+export const flattenedIssues = (features: Feature[]) => {
+  if (!features || features.length === 0) {
+    return [];
+  }
+
+  const allItems: Story[] = [];
+
+  features.forEach((feature) => {
+    feature.stories.forEach((story) => {
+      allItems.push(story);
+
+      story.issues.forEach((issue) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        allItems.push(issue);
+      });
+    });
+
+    feature.others.forEach((issue) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      allItems.push(issue);
+    });
+  });
+
+  return allItems;
+};
