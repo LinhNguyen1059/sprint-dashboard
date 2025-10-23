@@ -12,7 +12,6 @@ export default function Projects() {
   const projectsWithMetrics = projects.map((project) => {
     const totalFeatures = project.features.length;
     let totalProgress = 0;
-    let totalDevelopmentBugs = 0;
     let totalPostReleaseBugs = 0;
     let totalSpentTime = 0;
     let isInprogress = true;
@@ -21,8 +20,6 @@ export default function Projects() {
 
     project.features.forEach((feature) => {
       totalProgress += feature.percentDone || 0;
-      totalDevelopmentBugs +=
-        feature.criticalBugs + feature.highBugs + feature.normalBugs;
       totalPostReleaseBugs += feature.postReleaseBugs;
       totalSpentTime += feature.totalSpentTime;
       if (feature.dueStatus !== FeatureStatus.INPROGRESS) {
@@ -42,7 +39,6 @@ export default function Projects() {
       ...project,
       totalFeatures,
       averageFeatureProgress,
-      totalDevelopmentBugs,
       totalCriticalBugs,
       totalPostReleaseBugs,
       totalSpentTime,

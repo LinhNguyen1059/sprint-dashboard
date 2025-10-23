@@ -13,6 +13,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   SortingState,
+  Table,
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
@@ -25,6 +26,7 @@ import {
   ChevronsRight,
   ChevronsUpDown,
   Search,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -37,15 +39,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
+  Table as TableUI,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FeatureStatus, Member } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { CombinedIssue, FeatureStatus, Member } from "@/lib/types";
+import { checkCriticalBugs, cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import {
   Select,
@@ -55,6 +57,9 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Badge } from "../ui/badge";
+import { MultiSelectFilter } from "../MultiSelectFilter";
+import { Separator } from "../ui/separator";
+import { MEMBER_ROLE } from "@/lib/teams";
 
 const visibleColumns = {
   name: "Member name",
@@ -63,6 +68,25 @@ const visibleColumns = {
   highBugs: "High bugs",
   normalBugs: "Normal bugs",
   postReleaseBugs: "Post-Release bugs",
+  projects: "Projects",
+};
+
+const getIssuesByProjects = (table: Table<Member>, issues: CombinedIssue[]) => {
+  const projectFilterValue = table.getColumn("projects")?.getFilterValue();
+  const selectedProjects = Array.isArray(projectFilterValue)
+    ? projectFilterValue
+    : projectFilterValue
+    ? [projectFilterValue]
+    : [];
+
+  let filteredIssues = issues;
+  if (selectedProjects.length > 0) {
+    filteredIssues = issues.filter((issue) =>
+      selectedProjects.includes(issue.projectName)
+    );
+  }
+
+  return filteredIssues;
 };
 
 // Define a reusable component for sortable headers
@@ -113,32 +137,45 @@ const columns: ColumnDef<Member>[] = [
   },
   {
     accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => (
-      <Badge
-        variant="secondary"
-        className={cn(
-          row.original.isDev
-            ? "text-blue-500 bg-blue-500/10"
-            : "text-pink-500 bg-pink-500/10"
-        )}
-      >
-        {row.original.isDev ? "Developer" : "Tester"}
-      </Badge>
-    ),
+    header: ({ column }) => <SortableHeader column={column} title="Role" />,
+    cell: ({ row }) => {
+      let color = "text-blue-500 bg-blue-500/10";
+      if (row.original.role === MEMBER_ROLE.DESIGNER) {
+        color = "text-green-500 bg-green-500/10";
+      } else if (row.original.role === MEMBER_ROLE.TESTER) {
+        color = "text-pink-500 bg-pink-500/10";
+      } else if (row.original.role === MEMBER_ROLE.PM) {
+        color = "text-orange-500 bg-orange-500/10";
+      }
+      return (
+        <Badge variant="secondary" className={color}>
+          {row.original.role}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      if (Array.isArray(value)) {
+        return value.includes(row.getValue(id));
+      }
+      return value === "" || row.getValue(id) === value;
+    },
     enableHiding: false,
   },
   {
     accessorKey: "ontimePercent",
     header: () => <div className="text-right">% Tasks On Time</div>,
-    cell: ({ row }) => {
-      const ontimeCount = row.original.issues.filter(
+    cell: ({ row, table }) => {
+      const filteredIssues = getIssuesByProjects(table, row.original.issues);
+
+      const ontimeCount = filteredIssues.filter(
         (issue) =>
           (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
           issue.dueStatus === FeatureStatus.ONTIME
       ).length;
-      const totalCount = row.original.issues.length;
-      const percent = Math.round((ontimeCount / totalCount) * 100);
+      const totalCount = filteredIssues.length;
+      const percent =
+        totalCount > 0 ? Math.round((ontimeCount / totalCount) * 100) : 0;
 
       return <div className="text-right">{percent}%</div>;
     },
@@ -153,9 +190,16 @@ const columns: ColumnDef<Member>[] = [
         className="w-full justify-end"
       />
     ),
-    cell: ({ row }) => (
-      <div className="text-right">{row.original.timeSpent.toFixed(2)} hrs</div>
-    )
+    cell: ({ row, table }) => {
+      const filteredIssues = getIssuesByProjects(table, row.original.issues);
+
+      const timeSpent = filteredIssues.reduce((acc, issue) => {
+        acc += issue.totalSpentTime;
+        return acc;
+      }, 0);
+
+      return <div className="text-right">{Math.round(timeSpent)} hrs</div>;
+    },
   },
   {
     accessorKey: "criticalBugs",
@@ -166,9 +210,17 @@ const columns: ColumnDef<Member>[] = [
         className="w-full justify-end"
       />
     ),
-    cell: ({ row }) => (
-      <div className="text-right">{row.original.criticalBugs}</div>
-    )
+    cell: ({ row, table }) => {
+      const filteredIssues = getIssuesByProjects(table, row.original.issues);
+
+      const criticalBugs = checkCriticalBugs(
+        row.original.name,
+        filteredIssues,
+        false
+      );
+
+      return <div className="text-right">{criticalBugs}</div>;
+    },
   },
   {
     accessorKey: "highBugs",
@@ -179,7 +231,15 @@ const columns: ColumnDef<Member>[] = [
         className="w-full justify-end"
       />
     ),
-    cell: ({ row }) => <div className="text-right">{row.original.highBugs}</div>
+    cell: ({ row, table }) => {
+      const filteredIssues = getIssuesByProjects(table, row.original.issues);
+
+      const highBugs = filteredIssues.filter(
+        (issue) => issue.priority === "High" && issue.tracker === "Bug"
+      );
+
+      return <div className="text-right">{highBugs.length}</div>;
+    },
   },
   {
     accessorKey: "postReleaseBugs",
@@ -190,15 +250,53 @@ const columns: ColumnDef<Member>[] = [
         className="w-full justify-end"
       />
     ),
+    cell: ({ row, table }) => {
+      const filteredIssues = getIssuesByProjects(table, row.original.issues);
+
+      const postReleaseBugs = checkCriticalBugs(
+        row.original.name,
+        filteredIssues,
+        true
+      );
+
+      return <div className="text-right">{postReleaseBugs}</div>;
+    },
+  },
+  {
+    accessorKey: "projects",
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        title="Projects"
+        className="w-full justify-end"
+      />
+    ),
     cell: ({ row }) => (
-      <div className="text-right">{row.original.postReleaseBugs}</div>
-    )
-  }
+      <div className="text-right">{row.original.projects.join(", ")}</div>
+    ),
+    filterFn: (row, id, value) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+
+      const memberProjects = row.getValue(id) as string[];
+
+      if (!memberProjects || memberProjects.length === 0) return false;
+
+      if (Array.isArray(value)) {
+        return value.some((selectedProject) =>
+          memberProjects.includes(selectedProject)
+        );
+      }
+
+      return memberProjects.includes(value);
+    },
+  },
 ];
 
 export function MembersTable({ data: initialData }: { data: Member[] }) {
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>({
+      projects: false,
+    });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
@@ -231,22 +329,82 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
+  const roleOptions = React.useMemo(() => {
+    const roles = initialData.map((mem) => mem.role);
+    return Array.from(new Set(roles)).filter(Boolean);
+  }, [initialData]);
+
+  const projectOptions = React.useMemo(() => {
+    const allProjects = initialData.flatMap((mem) => mem.projects);
+    return Array.from(new Set(allProjects)).filter(Boolean);
+  }, [initialData]);
+
   // Get the current name filter value
   const nameFilterValue = table.getColumn("name")?.getFilterValue() ?? "";
+  const roleFilterValue =
+    table.getColumn("role")?.getFilterValue() &&
+    Array.isArray(table.getColumn("role")?.getFilterValue())
+      ? (table.getColumn("role")?.getFilterValue() as string[])
+      : [];
+  const projectFilterValue =
+    table.getColumn("projects")?.getFilterValue() &&
+    Array.isArray(table.getColumn("projects")?.getFilterValue())
+      ? (table.getColumn("projects")?.getFilterValue() as string[])
+      : [];
 
   return (
     <div className="w-full flex-col justify-start gap-6">
       <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search members..."
-            value={nameFilterValue as string}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="pl-8"
+        <div className="flex items-center gap-2">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search members..."
+              value={nameFilterValue as string}
+              onChange={(event) =>
+                table.getColumn("name")?.setFilterValue(event.target.value)
+              }
+              className="pl-8"
+            />
+          </div>
+
+          {/* Role Multi-Select Filter */}
+          <MultiSelectFilter
+            options={roleOptions}
+            selectedValues={roleFilterValue}
+            onSelectionChange={(values) => {
+              table
+                .getColumn("role")
+                ?.setFilterValue(values.length > 0 ? values : undefined);
+            }}
+            placeholder="All Roles"
           />
+
+          {/* Projects Multi-Select Filter */}
+          <MultiSelectFilter
+            options={projectOptions}
+            selectedValues={projectFilterValue}
+            onSelectionChange={(values) => {
+              table
+                .getColumn("projects")
+                ?.setFilterValue(values.length > 0 ? values : undefined);
+            }}
+            placeholder="All Projects"
+          />
+
+          {columnFilters.length > 0 && (
+            <>
+              <Separator orientation="vertical" className="mx-2 !h-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.resetColumnFilters()}
+              >
+                Reset
+                <X className="ml-1" />
+              </Button>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -284,7 +442,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
         </div>
       </div>
       <div className="overflow-hidden rounded-lg border">
-        <Table>
+        <TableUI>
           <TableHeader className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -334,7 +492,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
               </TableRow>
             )}
           </TableBody>
-        </Table>
+        </TableUI>
       </div>
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">

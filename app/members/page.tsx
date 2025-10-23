@@ -4,8 +4,10 @@ import React from "react";
 
 import { useDashboard } from "@/components/DashboardLayout";
 import { MembersTable } from "@/components/Member/MembersTable";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const MembersPage: React.FC = () => {
+  usePageTitle("Members");
   const { members } = useDashboard();
 
   if (members.length === 0) {

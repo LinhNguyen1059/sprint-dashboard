@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CombinedIssue, Feature, FeatureStatus, Story } from "./types";
+import { CombinedIssue, Feature, FeatureStatus, Issue, Story } from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
 
 export function cn(...inputs: ClassValue[]) {
@@ -90,6 +90,7 @@ export const visibleColumns = {
   private: "Private",
   storyPoints: "Story points",
   ontimePercent: "% Tasks On Time",
+  triggeredBy: "Triggered By",
 };
 
 // Chart color utilities
@@ -162,4 +163,49 @@ export const flattenedIssues = (features: Feature[]) => {
   });
 
   return allItems;
+};
+
+export const checkCriticalBugs = (
+  member: string,
+  issues: Issue[] | CombinedIssue[],
+  isPostRelease: boolean = false
+): number => {
+  return issues.reduce((count, issue) => {
+    // Check if triggeredBy has a value and is different from the member name
+    if (issue.triggeredBy && issue.triggeredBy !== member) {
+      return count; // Don't count this bug
+    }
+
+    // Split the comma-separated categories and trim whitespace
+    const categories = issue.issueCategories
+      .split(",")
+      .map((category) => category.trim())
+      .filter(Boolean);
+
+    // Exclude issues with these categories
+    const excludedCategories = ["Requirement Error", "Test Environment Error"];
+    if (categories.some((category) => excludedCategories.includes(category))) {
+      return count; // Don't count this bug
+    }
+
+    // Check if it's a bug with critical priority
+    const isCriticalPriority =
+      issue.priority === "Urgent" || issue.priority === "Immediate";
+    const isBug = issue.tracker === "Bug";
+
+    if (!isBug || !isCriticalPriority) {
+      return count; // Not a critical bug
+    }
+
+    // Check for Post-Release Issue category based on the isPostRelease parameter
+    const hasPostReleaseCategory = categories.includes("Post-Release Issue");
+
+    if (isPostRelease) {
+      // For post-release bugs, we only want issues explicitly marked as Post-Release Issue
+      return hasPostReleaseCategory ? count + 1 : count;
+    } else {
+      // For critical bugs, we want bugs that are NOT marked as Post-Release Issue
+      return !hasPostReleaseCategory ? count + 1 : count;
+    }
+  }, 0);
 };

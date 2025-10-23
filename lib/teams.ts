@@ -1,75 +1,100 @@
+export const MEMBER_ROLE = {
+  DEV: "Developer",
+  DESIGNER: "Designer",
+  PM: "PM",
+  TESTER: "Tester",
+  OTHER: "Other",
+};
+
 export const TEAMS = [
   {
     name: "CMS",
     members: [
-      "Anh Huynh",
-      "Triet Nguyen",
-      "Duc Pham",
-      "Tung Le",
-      "Nhan Duc Bui",
-      "Huy Vo",
-      "Duc Truong",
-      "Phuoc Vo",
-      "Viet Pham",
-      "Thang Nguyen",
-      "Hieu Nguyen",
-      "Dong Phung",
-      "Linh Nguyen Truong",
-      "Bach Pham",
-      "Mien Pham",
-      "Dung Tran",
+      { name: "Anh Huynh", role: MEMBER_ROLE.DEV },
+      { name: "Triet Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Duc Pham", role: MEMBER_ROLE.DEV },
+      { name: "Tung Le", role: MEMBER_ROLE.DEV },
+      { name: "Nhan Duc Bui", role: MEMBER_ROLE.DEV },
+      { name: "Huy Vo", role: MEMBER_ROLE.DEV },
+      { name: "Duc Truong", role: MEMBER_ROLE.DEV },
+      { name: "Phuoc Vo", role: MEMBER_ROLE.DEV },
+      { name: "Viet Pham", role: MEMBER_ROLE.DEV },
+      { name: "Thang Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Hieu Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Dong Phung", role: MEMBER_ROLE.DEV },
+      { name: "Linh Nguyen Truong", role: MEMBER_ROLE.DEV },
+      { name: "Bach Pham", role: MEMBER_ROLE.DEV },
+      { name: "Mien Pham", role: MEMBER_ROLE.DEV },
+      { name: "Dung Tran", role: MEMBER_ROLE.PM },
     ],
   },
   {
     name: "PRO",
     members: [
-      "Thang Do",
-      "Ly Nguyen",
-      "Van Nguyen",
-      "Quang Lê",
-      "Nhut Do",
-      "HNghia Nguyen",
-      "Minh Ha",
-      "Nghia Nguyen",
-      "Dung Nguyen",
+      { name: "Thang Do", role: MEMBER_ROLE.DEV },
+      { name: "Ly Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Van Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Quang Lê", role: MEMBER_ROLE.DEV },
+      { name: "Nhut Do", role: MEMBER_ROLE.DEV },
+      { name: "HNghia Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Minh Ha", role: MEMBER_ROLE.DEV },
+      { name: "Nghia Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Dung Nguyen", role: MEMBER_ROLE.DEV },
     ],
   },
   {
     name: "WEB",
-    members: ["Hung Le", "Thanh Thao", "Minh Bui"],
+    members: [
+      { name: "Hung Le", role: MEMBER_ROLE.DEV },
+      { name: "Thanh Thao", role: MEMBER_ROLE.DEV },
+      { name: "Minh Bui", role: MEMBER_ROLE.DEV },
+    ],
   },
   {
     name: "ERP",
-    members: ["Dung Thai", "Hoa Nguyen", "Huynh Do", "Hieu Khau"],
+    members: [
+      { name: "Dung Thai", role: MEMBER_ROLE.DEV },
+      { name: "Hoa Nguyen", role: MEMBER_ROLE.DEV },
+      { name: "Huynh Do", role: MEMBER_ROLE.DEV },
+      { name: "Hieu Khau", role: MEMBER_ROLE.DEV },
+    ],
   },
   {
     name: "i3Website",
-    members: ["Huy Nguyen", "Loc Pham", "Hien Bui", "Kieu Nguyen"],
+    members: [
+      { name: "Huy Nguyen", role: MEMBER_ROLE.DESIGNER },
+      { name: "Loc Pham", role: MEMBER_ROLE.DESIGNER },
+      { name: "Hien Bui", role: MEMBER_ROLE.DEV },
+      { name: "Kieu Nguyen", role: MEMBER_ROLE.DEV },
+    ],
   },
   {
     name: "Data Mining",
-    members: ["Hoa Phan", "Thinh Thai"],
+    members: [
+      { name: "Hoa Phan", role: MEMBER_ROLE.OTHER },
+      { name: "Thinh Thai", role: MEMBER_ROLE.OTHER },
+    ],
   },
   {
     name: "TESTER",
     members: [
-      "Phuong Thanh",
-      "Han Le",
-      "Nguyen Cao",
-      "Thuong Nguyen",
-      "Lan Le",
-      "Danh Nguyen",
-      "Tam Vo",
-      "Thuy Tran",
-      "Hoa Tran",
-      "Vy Tran",
-      "Ngan Nguyen",
-      "Thanh Bui",
-      "Vu Pham",
-      "Nhung Nguyen",
-      "Khoa Hoang",
-      "ThiThanh Nguyen",
-      "Tran Nguyen",
+      { name: "Phuong Thanh", role: MEMBER_ROLE.TESTER },
+      { name: "Han Le", role: MEMBER_ROLE.TESTER },
+      { name: "Nguyen Cao", role: MEMBER_ROLE.TESTER },
+      { name: "Thuong Nguyen", role: MEMBER_ROLE.TESTER },
+      { name: "Lan Le", role: MEMBER_ROLE.TESTER },
+      { name: "Danh Nguyen", role: MEMBER_ROLE.TESTER },
+      { name: "Tam Vo", role: MEMBER_ROLE.TESTER },
+      { name: "Thuy Tran", role: MEMBER_ROLE.TESTER },
+      { name: "Hoa Tran", role: MEMBER_ROLE.TESTER },
+      { name: "Vy Tran", role: MEMBER_ROLE.TESTER },
+      { name: "Ngan Nguyen", role: MEMBER_ROLE.TESTER },
+      { name: "Thanh Bui", role: MEMBER_ROLE.TESTER },
+      { name: "Vu  Pham", role: MEMBER_ROLE.TESTER },
+      { name: "Nhung Nguyen", role: MEMBER_ROLE.TESTER },
+      { name: "Khoa Hoang", role: MEMBER_ROLE.TESTER },
+      { name: "ThiThanh Nguyen", role: MEMBER_ROLE.TESTER },
+      { name: "Tran Nguyen", role: MEMBER_ROLE.TESTER },
     ],
   },
 ];
@@ -77,6 +102,11 @@ export const TEAMS = [
 export const getMembers = () => TEAMS.flatMap((team) => team.members);
 
 export const getDevelopers = () =>
-  TEAMS.filter(
-    (team) => team.name !== "TESTER" && team.name !== "Data Mining"
-  ).flatMap((team) => team.members);
+  TEAMS.filter((team) => team.name !== "TESTER" && team.name !== "Data Mining")
+    .flatMap((team) => team.members)
+    .filter((member) => member.role === MEMBER_ROLE.DEV);
+
+export const getMemberRole = (memberName: string) => {
+  const member = getMembers().find((member) => member.name === memberName);
+  return member ? member.role : MEMBER_ROLE.OTHER;
+};

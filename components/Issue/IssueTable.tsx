@@ -192,7 +192,7 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-right">
-        {row.original.totalSpentTime.toFixed(2)} hrs
+        {Math.round(row.original.totalSpentTime)} hrs
       </div>
     ),
   },
@@ -209,6 +209,32 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
         column={column}
         title={visibleColumns["issueCategories"]}
       />
+    ),
+    filterFn: (row, id, value) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+
+      const rowCategories = row.getValue(id) as string;
+
+      if (!rowCategories) return false;
+
+      const individualRowCategories = rowCategories
+        .split(",")
+        .map((cat) => cat.trim())
+        .filter(Boolean);
+
+      if (Array.isArray(value)) {
+        return value.some((selectedCategory) =>
+          individualRowCategories.includes(selectedCategory)
+        );
+      }
+
+      return individualRowCategories.includes(value);
+    },
+  },
+  {
+    accessorKey: "triggeredBy",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["triggeredBy"]} />
     ),
   },
   {
@@ -326,6 +352,14 @@ export function IssueTable({
     const priorities = issues.map((story) => story.priority);
     return Array.from(new Set(priorities)).filter(Boolean);
   }, [issues]);
+  const issueCategoriesOptions = React.useMemo(() => {
+    const issueCategories = issues.map((story) => story.issueCategories);
+    const individualCategories = issueCategories
+      .filter(Boolean)
+      .flatMap((category) => category.split(",").map((item) => item.trim()))
+      .filter(Boolean);
+    return Array.from(new Set(individualCategories));
+  }, [issues]);
 
   const table = useReactTable({
     data: issues,
@@ -365,6 +399,11 @@ export function IssueTable({
     table.getColumn("priority")?.getFilterValue() &&
     Array.isArray(table.getColumn("priority")?.getFilterValue())
       ? (table.getColumn("priority")?.getFilterValue() as string[])
+      : [];
+  const issueCategoriesFilterValue =
+    table.getColumn("issueCategories")?.getFilterValue() &&
+    Array.isArray(table.getColumn("issueCategories")?.getFilterValue())
+      ? (table.getColumn("issueCategories")?.getFilterValue() as string[])
       : [];
 
   const completionRateClick = () => {
@@ -423,7 +462,6 @@ export function IssueTable({
               options={trackerOptions}
               selectedValues={trackerFilterValue}
               onSelectionChange={(values) => {
-                console.log("🚀 ~ IssueTable ~ values:", values);
                 table
                   .getColumn("tracker")
                   ?.setFilterValue(values.length > 0 ? values : undefined);
@@ -453,6 +491,18 @@ export function IssueTable({
                   ?.setFilterValue(values.length > 0 ? values : undefined);
               }}
               placeholder="All Priorities"
+            />
+
+            {/* Issue Categories Multi-Select Filter */}
+            <MultiSelectFilter
+              options={issueCategoriesOptions}
+              selectedValues={issueCategoriesFilterValue}
+              onSelectionChange={(values) => {
+                table
+                  .getColumn("issueCategories")
+                  ?.setFilterValue(values.length > 0 ? values : undefined);
+              }}
+              placeholder="All Issue Categories"
             />
 
             {columnFilters.length > 0 && (

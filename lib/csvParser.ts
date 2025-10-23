@@ -10,7 +10,7 @@ import {
   Member,
 } from "./types";
 import { flattenedIssues, formatValueToSlug } from "./utils";
-import { getDevelopers, getMembers } from "./teams";
+import { getDevelopers, getMemberRole, getMembers } from "./teams";
 
 // Define a type for our CSV row data
 type CSVRowData = Record<string, string>;
@@ -118,6 +118,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               dueDate: row["Due date"],
               status: row["Status"],
             }),
+            triggeredBy: row["Triggered By"],
           };
         });
 
@@ -155,67 +156,6 @@ export async function parseMultipleCSVFileObjects(
   }
 
   return allIssues;
-}
-
-/**
- * Parse teams CSV file content and extract team data
- * @param fileContent String content of the teams CSV file
- * @returns Array of teams with their members
- */
-export function parseTeamsCSV(fileContent: string): Team[] {
-  const parsedData: ParseResult<Record<string, string>> = parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-  });
-
-  const teams: Team[] = [];
-  let currentTeam: Team | null = null;
-
-  parsedData.data.forEach((row) => {
-    const teamName = row.Team;
-    const memberName = row.Members;
-
-    if (teamName && teamName.trim() !== "") {
-      // Create a new team
-      if (currentTeam) {
-        teams.push(currentTeam);
-      }
-      currentTeam = {
-        name: teamName.trim(),
-        members: memberName ? [memberName.trim()] : [],
-      };
-    } else if (currentTeam && memberName && memberName.trim() !== "") {
-      // Add member to the current team
-      currentTeam.members.push(memberName.trim());
-    }
-  });
-
-  // Don't forget the last team
-  if (currentTeam) {
-    teams.push(currentTeam);
-  }
-
-  return teams;
-}
-
-/**
- * Read and parse the teams.csv file from the project
- * @returns Promise that resolves to array of teams
- */
-export async function readTeamsCSV(): Promise<Team[]> {
-  try {
-    // In a browser environment, we need to fetch the file from the public directory
-    const response = await fetch("/lib/teams.csv");
-    if (!response.ok) {
-      console.warn(`Failed to fetch teams.csv: ${response.statusText}`);
-      return [];
-    }
-    const fileContent = await response.text();
-    return parseTeamsCSV(fileContent);
-  } catch (error) {
-    console.warn("Error reading teams.csv:", error);
-    return [];
-  }
 }
 
 /**
@@ -290,7 +230,6 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         slug: formatValueToSlug(epic.subject),
         criticalBugs: 0,
         highBugs: 0,
-        normalBugs: 0,
         postReleaseBugs: 0,
         stories: [],
         others: [],
@@ -306,26 +245,35 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
 
       let criticalCount = 0;
       let highCount = 0;
-      let normalCount = 0;
       let postReleaseCount = 0;
 
+      // Check if the issue is a bug with priority "Urgent" or "High"
       childIssues.forEach((issue) => {
-        // Check if the issue is a bug with priority "Urgent" or "High"
+        if (
+          issue.issueCategories.includes("Requirement Error") ||
+          issue.issueCategories.includes("Test Environment Error")
+        ) {
+          return;
+        }
+
         if (issue.tracker === "Bug") {
+          // Check if the issue has category "Post-Release Issue"
+          if (issue.issueCategories.includes("Post-Release Issue")) {
+            if (issue.priority === "Urgent") {
+              postReleaseCount += 1;
+            } else if (issue.priority === "Immediate") {
+              postReleaseCount += 1;
+            }
+            return;
+          }
+
           if (issue.priority === "Urgent") {
             criticalCount += 1;
           } else if (issue.priority === "Immediate") {
             criticalCount += 1;
           } else if (issue.priority === "High") {
             highCount += 1;
-          } else if (issue.priority === "Normal") {
-            normalCount += 1;
           }
-        }
-
-        // Check if the issue has category "Post-Release Issue"
-        if (issue.issueCategories === "Post-Release Issue") {
-          postReleaseCount += 1;
         }
       });
 
@@ -337,7 +285,6 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         issues: childIssues,
         criticalBugs: criticalCount,
         highBugs: highCount,
-        normalBugs: normalCount,
         postReleaseBugs: postReleaseCount,
       };
     });
@@ -361,7 +308,6 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
       // Aggregate bug counts from the story to the feature
       feature.criticalBugs += story.criticalBugs || 0;
       feature.highBugs += story.highBugs || 0;
-      feature.normalBugs += story.normalBugs || 0;
       feature.postReleaseBugs += story.postReleaseBugs || 0;
     }
   });
@@ -372,21 +318,31 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
     if (feature) {
       feature.others.push(task);
 
+      if (
+        task.issueCategories.includes("Requirement Error") ||
+        task.issueCategories.includes("Test Environment Error")
+      ) {
+        return;
+      }
+
       if (task.tracker === "Bug") {
+        // Check if the issue has category "Post-Release Issue"
+        if (task.issueCategories.includes("Post-Release Issue")) {
+          if (task.priority === "Urgent") {
+            feature.postReleaseBugs += 1;
+          } else if (task.priority === "Immediate") {
+            feature.postReleaseBugs += 1;
+          }
+          return;
+        }
+
         if (task.priority === "Urgent") {
           feature.criticalBugs += 1;
         } else if (task.priority === "Immediate") {
           feature.criticalBugs += 1;
         } else if (task.priority === "High") {
           feature.highBugs += 1;
-        } else if (task.priority === "Normal") {
-          feature.normalBugs += 1;
         }
-      }
-
-      // Check if the task has category "Post-Release Issue"
-      if (task.issueCategories === "Post-Release Issue") {
-        feature.postReleaseBugs += 1;
       }
     }
   });
@@ -417,14 +373,18 @@ function calculateMembersInProject(issues: CombinedIssue[]) {
   });
   const allMembers = getMembers();
   const developers = getDevelopers();
-  const members = allMembers.filter((member) => uniqueAssignees.has(member));
+  const members = allMembers.filter((member) =>
+    uniqueAssignees.has(member.name)
+  );
   const totalMembers = members.length || 0;
-  const totalDevs = developers.filter((dev) => uniqueAssignees.has(dev)).length;
+  const totalDevs = developers.filter((dev) =>
+    uniqueAssignees.has(dev.name)
+  ).length;
 
   return {
     members,
     totalMembers,
-    totalDevs
+    totalDevs,
   };
 }
 
@@ -516,7 +476,7 @@ export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
       totalItems: issues.length,
       totalMembers: totalMembers,
       totalDevs: totalDevs,
-      features: taggedFeatures
+      features: taggedFeatures,
     };
 
     solutions.push(solution);
@@ -539,8 +499,8 @@ export function calculateMembers(
   const validMemberNames = new Set<string>();
   teams.forEach((team) => {
     team.members.forEach((member) => {
-      if (member && member.trim() !== "") {
-        validMemberNames.add(member.trim());
+      if (member && member.name.trim() !== "") {
+        validMemberNames.add(member.name);
       }
     });
   });
@@ -572,8 +532,6 @@ export function calculateMembers(
   // Create a map of member names to their stats
   const memberMap: Record<string, Member> = {};
 
-  const devMembers = getDevelopers();
-
   // Collect all unique member names from assignee and doneBy fields
   issues.forEach((issue) => {
     // Process assignee
@@ -591,11 +549,15 @@ export function calculateMembers(
             highBugs: 0,
             postReleaseBugs: 0,
             issues: [],
-            isDev: devMembers.includes(assignee),
+            projects: [],
+            role: getMemberRole(assignee),
           };
         }
         memberMap[assignee].issues.push(issue);
         memberMap[assignee].timeSpent += issue.totalSpentTime;
+        if (!memberMap[assignee].projects.includes(issue.projectName)) {
+          memberMap[assignee].projects.push(issue.projectName);
+        }
       }
     }
 
@@ -616,14 +578,18 @@ export function calculateMembers(
                 criticalBugs: 0,
                 highBugs: 0,
                 postReleaseBugs: 0,
+                projects: [],
                 issues: [],
-                isDev: devMembers.includes(doneByName),
+                role: getMemberRole(doneByName),
               };
             }
             // Only add the issue if it's not already in the array
             if (!memberMap[doneByName].issues.includes(issue)) {
               memberMap[doneByName].issues.push(issue);
               memberMap[doneByName].timeSpent += issue.totalSpentTime;
+              if (!memberMap[doneByName].projects.includes(issue.projectName)) {
+                memberMap[doneByName].projects.push(issue.projectName);
+              }
             }
           }
         }
@@ -645,8 +611,9 @@ export function calculateMembers(
               criticalBugs: 0,
               highBugs: 0,
               postReleaseBugs: 0,
+              projects: [],
               issues: [],
-              isDev: devMembers.includes(assignee),
+              role: getMemberRole(assignee),
             };
           }
 
@@ -678,8 +645,9 @@ export function calculateMembers(
                   criticalBugs: 0,
                   highBugs: 0,
                   postReleaseBugs: 0,
+                  projects: [],
                   issues: [],
-                  isDev: devMembers.includes(doneByName),
+                  role: getMemberRole(doneByName),
                 };
               }
 
@@ -711,8 +679,9 @@ export function calculateMembers(
               criticalBugs: 0,
               highBugs: 0,
               postReleaseBugs: 0,
+              projects: [],
               issues: [],
-              isDev: devMembers.includes(assignee),
+              role: getMemberRole(assignee),
             };
           }
           memberMap[assignee].postReleaseBugs += 1;
@@ -736,8 +705,9 @@ export function calculateMembers(
                   criticalBugs: 0,
                   highBugs: 0,
                   postReleaseBugs: 0,
+                  projects: [],
                   issues: [],
-                  isDev: devMembers.includes(doneByName),
+                  role: getMemberRole(doneByName),
                 };
               }
               // Only count the Post-Release issue once per member

@@ -164,7 +164,7 @@ export function FeatureTable({
       ),
       cell: ({ row }) => (
         <div className="text-right">
-          {row.original.totalSpentTime.toFixed(2)} hrs
+          {Math.round(row.original.totalSpentTime)} hrs
         </div>
       ),
     },

@@ -35,6 +35,7 @@ export interface Issue {
   issueCategories: string;
   private: boolean;
   storyPoints: number;
+  triggeredBy: string;
 }
 
 export interface CombinedIssue extends Issue {
@@ -50,7 +51,6 @@ export interface Story extends CombinedIssue {
   issues: Issue[];
   criticalBugs: number;
   highBugs: number;
-  normalBugs: number;
   postReleaseBugs: number;
 }
 
@@ -59,7 +59,6 @@ export interface Feature extends CombinedIssue {
   criticalBugs: number;
   highBugs: number;
   postReleaseBugs: number;
-  normalBugs: number;
   stories: Story[];
   others: Issue[];
 }
@@ -73,11 +72,11 @@ export interface Project {
   features: Feature[];
 }
 
-export type Solution = Project
+export type Solution = Project;
 
 export interface Team {
   name: string;
-  members: string[];
+  members: Array<{ name: string; role: string }>;
 }
 
 export interface Member {
@@ -88,7 +87,8 @@ export interface Member {
   highBugs: number;
   postReleaseBugs: number;
   issues: CombinedIssue[];
-  isDev: boolean;
+  role: string;
+  projects: string[];
 }
 
 export enum FeatureStatus {

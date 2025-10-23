@@ -262,7 +262,7 @@ export function FeatureChart({ data: features }: { data: Feature[] }) {
 
     // Calculate total development bugs (urgent + high + normal)
     const totalDevelopmentBugs = features.reduce((sum, feature) => {
-      return sum + feature.criticalBugs + feature.highBugs + feature.normalBugs;
+      return sum + feature.criticalBugs + feature.highBugs;
     }, 0);
 
     // Calculate total Post Release bugs

@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { Bug, Clock, Loader, Users } from "lucide-react";
+import { Bug, Clock, Users } from "lucide-react";
 
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,6 @@ import { Project } from "@/lib/types";
 export interface Metrics extends Project {
   totalFeatures: number;
   averageFeatureProgress: number;
-  totalDevelopmentBugs: number;
   totalPostReleaseBugs: number;
   totalSpentTime: number;
   totalCriticalBugs: number;
@@ -119,7 +117,7 @@ export default function CardOverview({ metrics, slug }: Props) {
                       <Clock size={14} /> Spent time
                     </div>
                     <div className="flex items-center gap-1 text-sm font-medium text-green-700">
-                      {metric.totalSpentTime.toFixed(2)} hrs
+                      {Math.round(metric.totalSpentTime)} hrs
                     </div>
                   </div>
 
