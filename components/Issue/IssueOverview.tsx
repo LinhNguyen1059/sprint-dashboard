@@ -2,34 +2,33 @@
 
 import { useMemo } from "react";
 import { AlertCircle, Clock, Flag, Play, TrendingUp, Zap } from "lucide-react";
-import { Table } from "@tanstack/react-table";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  CombinedIssue,
-  Feature,
-  FeatureStatus,
-  Member,
-  Story,
-} from "@/lib/types";
+import { CombinedIssue, FeatureStatus, Story } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function IssueOverview({
-  data,
-  issues,
-  actions,
-}: {
-  data: Feature | Story | Member;
+export interface IssueOverviewData {
+  criticalBugs: number;
+  highBugs: number;
+  postReleaseBugs: number;
+}
+
+export interface IssueOverviewActions {
+  completionRateClick?: () => void;
+  inProgressClick?: () => void;
+  overdueClick?: () => void;
+  criticalBugsClick?: () => void;
+  highBugsClick?: () => void;
+  postReleaseBugsClick?: () => void;
+}
+
+interface IssueOverviewProps {
+  data: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
-  actions?: {
-    completionRateClick?: () => void;
-    inProgressClick?: () => void;
-    overdueClick?: () => void;
-    criticalBugsClick?: () => void;
-    highBugsClick?: () => void;
-    postReleaseBugsClick?: () => void;
-  };
-}) {
+  actions: IssueOverviewActions;
+}
+
+export function IssueOverview({ data, issues, actions }: IssueOverviewProps) {
   // Calculate metrics for display
   const metrics = useMemo(() => {
     if (!data) return null;
@@ -61,7 +60,7 @@ export function IssueOverview({
       // Bug severity metrics from data data
       criticalBugs: data.criticalBugs || 0,
       highBugs: data.highBugs || 0,
-      postReleaseBugs: data.postReleaseBugs || 0,
+      postReleaseBugs: data.postReleaseBugs || 0
     };
   }, [data, issues]);
 

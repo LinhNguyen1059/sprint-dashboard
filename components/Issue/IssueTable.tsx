@@ -69,6 +69,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { IssueOverview } from "./";
+import { IssueOverviewData } from "./IssueOverview";
 
 // Define a reusable component for sortable headers
 const SortableHeader = ({
@@ -316,7 +317,7 @@ export function IssueTable({
   data,
   issues,
 }: {
-  data: Feature | Story | Member;
+  data: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
 }) {
   const [columnVisibility, setColumnVisibility] =

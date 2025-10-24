@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { IssueTable } from "@/components/Issue";
 import { useDashboard } from "@/components/DashboardLayout";
-import { Feature } from "@/lib/types";
 import { flattenedIssues, getFeatureStatus } from "@/lib/utils";
 import { usePageTitle } from "@/hooks/use-page-title";
 
@@ -37,6 +36,14 @@ export default function FeatureDetail() {
     return getFeatureStatus(featureData.dueStatus);
   }, [featureData]);
 
+  const bugsByPriority = useMemo(() => {
+    return {
+      criticalBugs: featureData?.criticalBugs || 0,
+      highBugs: featureData?.highBugs || 0,
+      postReleaseBugs: featureData?.postReleaseBugs || 0
+    };
+  }, [featureData]);
+
   usePageTitle(featureData ? featureData.subject : "Feature Detail");
 
   return (
@@ -53,7 +60,7 @@ export default function FeatureDetail() {
         </div>
       </div>
 
-      <IssueTable data={featureData as Feature} issues={flattenedStories} />
+      <IssueTable data={bugsByPriority} issues={flattenedStories} />
     </div>
   );
 }

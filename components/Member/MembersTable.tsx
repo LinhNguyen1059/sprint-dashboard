@@ -15,7 +15,7 @@ import {
   SortingState,
   Table,
   useReactTable,
-  VisibilityState,
+  VisibilityState
 } from "@tanstack/react-table";
 import {
   ChevronDown,
@@ -26,7 +26,7 @@ import {
   ChevronsRight,
   ChevronsUpDown,
   Search,
-  X,
+  X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -35,7 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,17 +44,17 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
 import { CombinedIssue, FeatureStatus, Member } from "@/lib/types";
-import { checkCriticalBugs, cn } from "@/lib/utils";
+import { countBugsByPriority, cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "../ui/select";
 import { Badge } from "../ui/badge";
 import { MultiSelectFilter } from "../MultiSelectFilter";
@@ -68,7 +68,7 @@ const visibleColumns = {
   highBugs: "High bugs",
   normalBugs: "Normal bugs",
   postReleaseBugs: "Post-Release bugs",
-  projects: "Projects",
+  projects: "Projects"
 };
 
 const getIssuesByProjects = (table: Table<Member>, issues: CombinedIssue[]) => {
@@ -93,7 +93,7 @@ const getIssuesByProjects = (table: Table<Member>, issues: CombinedIssue[]) => {
 const SortableHeader = ({
   column,
   title,
-  className = "",
+  className = ""
 }: {
   column: Column<Member>;
   title: string;
@@ -133,7 +133,7 @@ const columns: ColumnDef<Member>[] = [
       </div>
     ),
     filterFn: "includesString",
-    enableHiding: false,
+    enableHiding: false
   },
   {
     accessorKey: "role",
@@ -160,7 +160,7 @@ const columns: ColumnDef<Member>[] = [
       }
       return value === "" || row.getValue(id) === value;
     },
-    enableHiding: false,
+    enableHiding: false
   },
   {
     accessorKey: "ontimePercent",
@@ -179,7 +179,7 @@ const columns: ColumnDef<Member>[] = [
 
       return <div className="text-right">{percent}%</div>;
     },
-    enableHiding: false,
+    enableHiding: false
   },
   {
     accessorKey: "timeSpent",
@@ -199,7 +199,7 @@ const columns: ColumnDef<Member>[] = [
       }, 0);
 
       return <div className="text-right">{Math.round(timeSpent)} hrs</div>;
-    },
+    }
   },
   {
     accessorKey: "criticalBugs",
@@ -213,14 +213,14 @@ const columns: ColumnDef<Member>[] = [
     cell: ({ row, table }) => {
       const filteredIssues = getIssuesByProjects(table, row.original.issues);
 
-      const criticalBugs = checkCriticalBugs(
-        row.original.name,
-        filteredIssues,
-        false
-      );
+      const criticalBugs = countBugsByPriority({
+        member: row.original.name,
+        issues: filteredIssues,
+        priorities: ["Urgent", "Immediate"]
+      });
 
       return <div className="text-right">{criticalBugs}</div>;
-    },
+    }
   },
   {
     accessorKey: "highBugs",
@@ -234,12 +234,14 @@ const columns: ColumnDef<Member>[] = [
     cell: ({ row, table }) => {
       const filteredIssues = getIssuesByProjects(table, row.original.issues);
 
-      const highBugs = filteredIssues.filter(
-        (issue) => issue.priority === "High" && issue.tracker === "Bug"
-      );
+      const highBugs = countBugsByPriority({
+        member: row.original.name,
+        issues: filteredIssues,
+        priorities: ["High"]
+      });
 
-      return <div className="text-right">{highBugs.length}</div>;
-    },
+      return <div className="text-right">{highBugs}</div>;
+    }
   },
   {
     accessorKey: "postReleaseBugs",
@@ -253,14 +255,15 @@ const columns: ColumnDef<Member>[] = [
     cell: ({ row, table }) => {
       const filteredIssues = getIssuesByProjects(table, row.original.issues);
 
-      const postReleaseBugs = checkCriticalBugs(
-        row.original.name,
-        filteredIssues,
-        true
-      );
+      const postReleaseBugs = countBugsByPriority({
+        member: row.original.name,
+        issues: filteredIssues,
+        priorities: ["Urgent", "Immediate"],
+        isPostRelease: true
+      });
 
       return <div className="text-right">{postReleaseBugs}</div>;
-    },
+    }
   },
   {
     accessorKey: "projects",
@@ -288,14 +291,14 @@ const columns: ColumnDef<Member>[] = [
       }
 
       return memberProjects.includes(value);
-    },
-  },
+    }
+  }
 ];
 
 export function MembersTable({ data: initialData }: { data: Member[] }) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
-      projects: false,
+      projects: false
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -303,7 +306,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 50,
+    pageSize: 50
   });
 
   const table = useReactTable({
@@ -313,7 +316,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
       sorting,
       columnVisibility,
       columnFilters,
-      pagination,
+      pagination
     },
     getRowId: (row) => row.slug,
     enableRowSelection: true,
@@ -326,7 +329,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getFacetedUniqueValues: getFacetedUniqueValues()
   });
 
   const roleOptions = React.useMemo(() => {

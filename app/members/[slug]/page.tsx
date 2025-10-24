@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useDashboard } from "@/components/DashboardLayout";
 import { IssueTable } from "@/components/Issue";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { countBugsByPriority } from "@/lib/utils";
 
 export default function FeatureDetail() {
   const params = useParams();
@@ -19,6 +20,39 @@ export default function FeatureDetail() {
     }
     return members.find((p) => p.slug === slug);
   }, [members, slug]);
+
+  const bugsByPriority = useMemo(() => {
+    if (!memberData?.issues) {
+      return {
+        highBugs: 0,
+        postReleaseBugs: 0,
+        criticalBugs: 0
+      };
+    }
+
+    const highBugs = countBugsByPriority({
+      member: memberData.name,
+      issues: memberData.issues,
+      priorities: ["High"]
+    });
+    const postReleaseBugs = countBugsByPriority({
+      member: memberData.name,
+      issues: memberData.issues,
+      priorities: ["Urgent", "Immediate"],
+      isPostRelease: true
+    });
+    const criticalBugs = countBugsByPriority({
+      member: memberData.name,
+      issues: memberData.issues,
+      priorities: ["Urgent", "Immediate"]
+    });
+
+    return {
+      highBugs: highBugs || 0,
+      postReleaseBugs: postReleaseBugs || 0,
+      criticalBugs: criticalBugs || 0
+    };
+  }, [memberData]);
 
   usePageTitle(memberData ? memberData.name : "Member");
 
@@ -41,7 +75,7 @@ export default function FeatureDetail() {
         </div>
       </div>
 
-      <IssueTable data={memberData} issues={memberData?.issues} />
+      <IssueTable data={bugsByPriority} issues={memberData?.issues} />
     </div>
   );
 }

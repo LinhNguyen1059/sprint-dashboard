@@ -7,7 +7,7 @@ import {
   Solution,
   Story,
   Team,
-  Member,
+  Member
 } from "./types";
 import { flattenedIssues, formatValueToSlug } from "./utils";
 import { getDevelopers, getMemberRole, getMembers } from "./teams";
@@ -59,7 +59,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               return value === "1";
             }
             return value;
-          },
+          }
         });
 
         // Convert parsed data to our CombinedIssue interface
@@ -116,9 +116,9 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
             dueStatus: calculateFeatureStatus({
               closedDate: row["Closed"],
               dueDate: row["Due date"],
-              status: row["Status"],
+              status: row["Status"]
             }),
-            triggeredBy: row["Triggered By"],
+            triggeredBy: row["Triggered By"]
           };
         });
 
@@ -168,7 +168,7 @@ export async function parseMultipleCSVFileObjects(
 function calculateFeatureStatus({
   dueDate,
   closedDate,
-  status,
+  status
 }: {
   dueDate: string;
   closedDate: string;
@@ -225,14 +225,14 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         dueStatus: calculateFeatureStatus({
           closedDate: epic.closed,
           dueDate: epic.dueDate,
-          status: epic.status,
+          status: epic.status
         }),
         slug: formatValueToSlug(epic.subject),
         criticalBugs: 0,
         highBugs: 0,
         postReleaseBugs: 0,
         stories: [],
-        others: [],
+        others: []
       };
     });
 
@@ -285,7 +285,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         issues: childIssues,
         criticalBugs: criticalCount,
         highBugs: highCount,
-        postReleaseBugs: postReleaseCount,
+        postReleaseBugs: postReleaseCount
       };
     });
 
@@ -384,7 +384,7 @@ function calculateMembersInProject(issues: CombinedIssue[]) {
   return {
     members,
     totalMembers,
-    totalDevs,
+    totalDevs
   };
 }
 
@@ -424,7 +424,7 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
       totalItems: projectIssues.length,
       totalMembers: totalMembers,
       totalDevs: totalDevs,
-      features: features,
+      features: features
     };
 
     projects.push(project);
@@ -476,7 +476,7 @@ export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
       totalItems: issues.length,
       totalMembers: totalMembers,
       totalDevs: totalDevs,
-      features: taggedFeatures,
+      features: taggedFeatures
     };
 
     solutions.push(solution);
@@ -544,17 +544,12 @@ export function calculateMembers(
           memberMap[assignee] = {
             slug: formatValueToSlug(assignee),
             name: assignee,
-            timeSpent: 0,
-            criticalBugs: 0,
-            highBugs: 0,
-            postReleaseBugs: 0,
             issues: [],
             projects: [],
-            role: getMemberRole(assignee),
+            role: getMemberRole(assignee)
           };
         }
         memberMap[assignee].issues.push(issue);
-        memberMap[assignee].timeSpent += issue.totalSpentTime;
         if (!memberMap[assignee].projects.includes(issue.projectName)) {
           memberMap[assignee].projects.push(issue.projectName);
         }
@@ -574,19 +569,14 @@ export function calculateMembers(
               memberMap[doneByName] = {
                 slug: formatValueToSlug(doneByName),
                 name: doneByName,
-                timeSpent: 0,
-                criticalBugs: 0,
-                highBugs: 0,
-                postReleaseBugs: 0,
                 projects: [],
                 issues: [],
-                role: getMemberRole(doneByName),
+                role: getMemberRole(doneByName)
               };
             }
             // Only add the issue if it's not already in the array
             if (!memberMap[doneByName].issues.includes(issue)) {
               memberMap[doneByName].issues.push(issue);
-              memberMap[doneByName].timeSpent += issue.totalSpentTime;
               if (!memberMap[doneByName].projects.includes(issue.projectName)) {
                 memberMap[doneByName].projects.push(issue.projectName);
               }
@@ -594,128 +584,6 @@ export function calculateMembers(
           }
         }
       });
-    }
-
-    if (issue.tracker === "Bug") {
-      // Process assignee for bug counting
-      if (issue.assignee && issue.assignee.trim() !== "") {
-        const assignee = issue.assignee.trim();
-
-        // Only process if the assignee is in our valid members list (or if using fallback)
-        if (validMemberNames.has(assignee) || useFallback) {
-          if (!memberMap[assignee]) {
-            memberMap[assignee] = {
-              slug: formatValueToSlug(assignee),
-              name: assignee,
-              timeSpent: 0,
-              criticalBugs: 0,
-              highBugs: 0,
-              postReleaseBugs: 0,
-              projects: [],
-              issues: [],
-              role: getMemberRole(assignee),
-            };
-          }
-
-          if (issue.priority === "Urgent") {
-            memberMap[assignee].criticalBugs += 1;
-          }
-          if (issue.priority === "Immediate") {
-            memberMap[assignee].criticalBugs += 1;
-          } else if (issue.priority === "High") {
-            memberMap[assignee].highBugs += 1;
-          }
-        }
-      }
-
-      // Process doneBy for bug counting
-      if (issue.doneBy && issue.doneBy.trim() !== "") {
-        const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
-        doneByNames.forEach((name) => {
-          if (name && name.trim() !== "") {
-            const doneByName = name.trim();
-
-            // Only process if the doneBy name is in our valid members list (or if using fallback)
-            if (validMemberNames.has(doneByName) || useFallback) {
-              if (!memberMap[doneByName]) {
-                memberMap[doneByName] = {
-                  slug: formatValueToSlug(doneByName),
-                  name: doneByName,
-                  timeSpent: 0,
-                  criticalBugs: 0,
-                  highBugs: 0,
-                  postReleaseBugs: 0,
-                  projects: [],
-                  issues: [],
-                  role: getMemberRole(doneByName),
-                };
-              }
-
-              // Only count the bug once per member
-              if (issue.priority === "Urgent") {
-                memberMap[doneByName].criticalBugs += 1;
-              } else if (issue.priority === "High") {
-                memberMap[doneByName].highBugs += 1;
-              }
-            }
-          }
-        });
-      }
-    }
-
-    // Count Post-Release issues for members
-    if (issue.issueCategories === "Post-Release Issue") {
-      // Process assignee for Post-Release Issue counting
-      if (issue.assignee && issue.assignee.trim() !== "") {
-        const assignee = issue.assignee.trim();
-
-        // Only process if the assignee is in our valid members list (or if using fallback)
-        if (validMemberNames.has(assignee) || useFallback) {
-          if (!memberMap[assignee]) {
-            memberMap[assignee] = {
-              slug: formatValueToSlug(assignee),
-              name: assignee,
-              timeSpent: 0,
-              criticalBugs: 0,
-              highBugs: 0,
-              postReleaseBugs: 0,
-              projects: [],
-              issues: [],
-              role: getMemberRole(assignee),
-            };
-          }
-          memberMap[assignee].postReleaseBugs += 1;
-        }
-      }
-
-      // Process doneBy for Post-Release counting
-      if (issue.doneBy && issue.doneBy.trim() !== "") {
-        const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
-        doneByNames.forEach((name) => {
-          if (name && name.trim() !== "") {
-            const doneByName = name.trim();
-
-            // Only process if the doneBy name is in our valid members list (or if using fallback)
-            if (validMemberNames.has(doneByName) || useFallback) {
-              if (!memberMap[doneByName]) {
-                memberMap[doneByName] = {
-                  slug: formatValueToSlug(doneByName),
-                  name: doneByName,
-                  timeSpent: 0,
-                  criticalBugs: 0,
-                  highBugs: 0,
-                  postReleaseBugs: 0,
-                  projects: [],
-                  issues: [],
-                  role: getMemberRole(doneByName),
-                };
-              }
-              // Only count the Post-Release issue once per member
-              memberMap[doneByName].postReleaseBugs += 1;
-            }
-          }
-        });
-      }
     }
   });
 

@@ -3,7 +3,7 @@ export const MEMBER_ROLE = {
   DESIGNER: "Designer",
   PM: "PM",
   TESTER: "Tester",
-  OTHER: "Other",
+  OTHER: "Other"
 };
 
 export const TEAMS = [
@@ -25,8 +25,8 @@ export const TEAMS = [
       { name: "Linh Nguyen Truong", role: MEMBER_ROLE.DEV },
       { name: "Bach Pham", role: MEMBER_ROLE.DEV },
       { name: "Mien Pham", role: MEMBER_ROLE.DEV },
-      { name: "Dung Tran", role: MEMBER_ROLE.PM },
-    ],
+      { name: "Dung Tran", role: MEMBER_ROLE.PM }
+    ]
   },
   {
     name: "PRO",
@@ -39,16 +39,16 @@ export const TEAMS = [
       { name: "HNghia Nguyen", role: MEMBER_ROLE.DEV },
       { name: "Minh Ha", role: MEMBER_ROLE.DEV },
       { name: "Nghia Nguyen", role: MEMBER_ROLE.DEV },
-      { name: "Dung Nguyen", role: MEMBER_ROLE.DEV },
-    ],
+      { name: "Dung Nguyen", role: MEMBER_ROLE.DEV }
+    ]
   },
   {
     name: "WEB",
     members: [
       { name: "Hung Le", role: MEMBER_ROLE.DEV },
       { name: "Thanh Thao", role: MEMBER_ROLE.DEV },
-      { name: "Minh Bui", role: MEMBER_ROLE.DEV },
-    ],
+      { name: "Minh Bui", role: MEMBER_ROLE.DEV }
+    ]
   },
   {
     name: "ERP",
@@ -56,8 +56,8 @@ export const TEAMS = [
       { name: "Dung Thai", role: MEMBER_ROLE.DEV },
       { name: "Hoa Nguyen", role: MEMBER_ROLE.DEV },
       { name: "Huynh Do", role: MEMBER_ROLE.DEV },
-      { name: "Hieu Khau", role: MEMBER_ROLE.DEV },
-    ],
+      { name: "Hieu Khau", role: MEMBER_ROLE.DEV }
+    ]
   },
   {
     name: "i3Website",
@@ -65,15 +65,15 @@ export const TEAMS = [
       { name: "Huy Nguyen", role: MEMBER_ROLE.DESIGNER },
       { name: "Loc Pham", role: MEMBER_ROLE.DESIGNER },
       { name: "Hien Bui", role: MEMBER_ROLE.DEV },
-      { name: "Kieu Nguyen", role: MEMBER_ROLE.DEV },
-    ],
+      { name: "Kieu Nguyen", role: MEMBER_ROLE.DEV }
+    ]
   },
   {
     name: "Data Mining",
     members: [
       { name: "Hoa Phan", role: MEMBER_ROLE.OTHER },
-      { name: "Thinh Thai", role: MEMBER_ROLE.OTHER },
-    ],
+      { name: "Thinh Thai", role: MEMBER_ROLE.OTHER }
+    ]
   },
   {
     name: "TESTER",
@@ -90,13 +90,13 @@ export const TEAMS = [
       { name: "Vy Tran", role: MEMBER_ROLE.TESTER },
       { name: "Ngan Nguyen", role: MEMBER_ROLE.TESTER },
       { name: "Thanh Bui", role: MEMBER_ROLE.TESTER },
-      { name: "Vu  Pham", role: MEMBER_ROLE.TESTER },
+      { name: "Vu Pham", role: MEMBER_ROLE.TESTER },
       { name: "Nhung Nguyen", role: MEMBER_ROLE.TESTER },
       { name: "Khoa Hoang", role: MEMBER_ROLE.TESTER },
       { name: "ThiThanh Nguyen", role: MEMBER_ROLE.TESTER },
-      { name: "Tran Nguyen", role: MEMBER_ROLE.TESTER },
-    ],
-  },
+      { name: "Tran Nguyen", role: MEMBER_ROLE.TESTER }
+    ]
+  }
 ];
 
 export const getMembers = () => TEAMS.flatMap((team) => team.members);

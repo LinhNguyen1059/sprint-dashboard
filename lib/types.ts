@@ -82,10 +82,6 @@ export interface Team {
 export interface Member {
   slug: string;
   name: string;
-  timeSpent: number;
-  criticalBugs: number;
-  highBugs: number;
-  postReleaseBugs: number;
   issues: CombinedIssue[];
   role: string;
   projects: string[];
@@ -94,7 +90,7 @@ export interface Member {
 export enum FeatureStatus {
   INPROGRESS = 1,
   ONTIME = 2,
-  LATE = 3,
+  LATE = 3
 }
 
 // Component prop interfaces
@@ -171,7 +167,7 @@ export const CHART_COLOR_VALUES: ChartColor[] = [
   "var(--chart-27)",
   "var(--chart-28)",
   "var(--chart-29)",
-  "var(--chart-30)",
+  "var(--chart-30)"
 ];
 
 export type ChartColorIndex =
