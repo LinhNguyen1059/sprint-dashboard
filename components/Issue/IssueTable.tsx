@@ -233,12 +233,6 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     },
   },
   {
-    accessorKey: "triggeredBy",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["triggeredBy"]} />
-    ),
-  },
-  {
     accessorKey: "author",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["author"]} />
@@ -248,6 +242,12 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     accessorKey: "assignee",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["assignee"]} />
+    ),
+  },
+  {
+    accessorKey: "triggeredBy",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["triggeredBy"]} />
     ),
   },
   {
@@ -323,7 +323,6 @@ export function IssueTable({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
       author: false,
-      assignee: false,
       percentDone: false,
       created: false,
       startDate: false,
