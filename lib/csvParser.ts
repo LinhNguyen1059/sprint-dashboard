@@ -7,9 +7,13 @@ import {
   Solution,
   Story,
   Team,
-  Member
+  Member,
 } from "./types";
-import { flattenedIssues, formatValueToSlug } from "./utils";
+import {
+  excludedIssueCategories,
+  flattenedIssues,
+  formatValueToSlug,
+} from "./utils";
 import { getDevelopers, getMemberRole, getMembers } from "./teams";
 
 // Define a type for our CSV row data
@@ -59,7 +63,7 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               return value === "1";
             }
             return value;
-          }
+          },
         });
 
         // Convert parsed data to our CombinedIssue interface
@@ -116,9 +120,9 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
             dueStatus: calculateFeatureStatus({
               closedDate: row["Closed"],
               dueDate: row["Due date"],
-              status: row["Status"]
+              status: row["Status"],
             }),
-            triggeredBy: row["Triggered By"]
+            triggeredBy: row["Triggered By"],
           };
         });
 
@@ -168,7 +172,7 @@ export async function parseMultipleCSVFileObjects(
 function calculateFeatureStatus({
   dueDate,
   closedDate,
-  status
+  status,
 }: {
   dueDate: string;
   closedDate: string;
@@ -225,14 +229,14 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         dueStatus: calculateFeatureStatus({
           closedDate: epic.closed,
           dueDate: epic.dueDate,
-          status: epic.status
+          status: epic.status,
         }),
         slug: formatValueToSlug(epic.subject),
         criticalBugs: 0,
         highBugs: 0,
         postReleaseBugs: 0,
         stories: [],
-        others: []
+        others: [],
       };
     });
 
@@ -249,9 +253,14 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
 
       // Check if the issue is a bug with priority "Urgent" or "High"
       childIssues.forEach((issue) => {
+        const categories = issue.issueCategories
+          .split(",")
+          .map((category) => category.trim())
+          .filter(Boolean);
         if (
-          issue.issueCategories.includes("Requirement Error") ||
-          issue.issueCategories.includes("Test Environment Error")
+          categories.some((category) =>
+            excludedIssueCategories.includes(category)
+          )
         ) {
           return;
         }
@@ -285,7 +294,7 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         issues: childIssues,
         criticalBugs: criticalCount,
         highBugs: highCount,
-        postReleaseBugs: postReleaseCount
+        postReleaseBugs: postReleaseCount,
       };
     });
 
@@ -318,9 +327,15 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
     if (feature) {
       feature.others.push(task);
 
+      const categories = task.issueCategories
+        .split(",")
+        .map((category) => category.trim())
+        .filter(Boolean);
+
       if (
-        task.issueCategories.includes("Requirement Error") ||
-        task.issueCategories.includes("Test Environment Error")
+        categories.some((category) =>
+          excludedIssueCategories.includes(category)
+        )
       ) {
         return;
       }
@@ -384,7 +399,7 @@ function calculateMembersInProject(issues: CombinedIssue[]) {
   return {
     members,
     totalMembers,
-    totalDevs
+    totalDevs,
   };
 }
 
@@ -424,7 +439,7 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
       totalItems: projectIssues.length,
       totalMembers: totalMembers,
       totalDevs: totalDevs,
-      features: features
+      features: features,
     };
 
     projects.push(project);
@@ -476,7 +491,7 @@ export function calculateSolutions(issues: CombinedIssue[]): Solution[] {
       totalItems: issues.length,
       totalMembers: totalMembers,
       totalDevs: totalDevs,
-      features: taggedFeatures
+      features: taggedFeatures,
     };
 
     solutions.push(solution);
@@ -546,7 +561,7 @@ export function calculateMembers(
             name: assignee,
             issues: [],
             projects: [],
-            role: getMemberRole(assignee)
+            role: getMemberRole(assignee),
           };
         }
         memberMap[assignee].issues.push(issue);
@@ -571,7 +586,7 @@ export function calculateMembers(
                 name: doneByName,
                 projects: [],
                 issues: [],
-                role: getMemberRole(doneByName)
+                role: getMemberRole(doneByName),
               };
             }
             // Only add the issue if it's not already in the array
@@ -579,6 +594,40 @@ export function calculateMembers(
               memberMap[doneByName].issues.push(issue);
               if (!memberMap[doneByName].projects.includes(issue.projectName)) {
                 memberMap[doneByName].projects.push(issue.projectName);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Process triggeredBy (could be multiple names separated by commas)
+    if (issue.triggeredBy && issue.triggeredBy.trim() !== "") {
+      const triggeredByNames = issue.triggeredBy
+        .split(",")
+        .map((name) => name.trim());
+      triggeredByNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          const triggeredByName = name.trim();
+
+          // Only process if the doneBy name is in our valid members list (or if using fallback)
+          if (validMemberNames.has(triggeredByName) || useFallback) {
+            if (!memberMap[triggeredByName]) {
+              memberMap[triggeredByName] = {
+                slug: formatValueToSlug(triggeredByName),
+                name: triggeredByName,
+                projects: [],
+                issues: [],
+                role: getMemberRole(triggeredByName),
+              };
+            }
+            // Only add the issue if it's not already in the array
+            if (!memberMap[triggeredByName].issues.includes(issue)) {
+              memberMap[triggeredByName].issues.push(issue);
+              if (
+                !memberMap[triggeredByName].projects.includes(issue.projectName)
+              ) {
+                memberMap[triggeredByName].projects.push(issue.projectName);
               }
             }
           }

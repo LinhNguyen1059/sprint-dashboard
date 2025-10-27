@@ -2,10 +2,17 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { CombinedIssue, Feature, FeatureStatus, Issue, Story } from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
+import { getDevelopers } from "./teams";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+export const excludedIssueCategories = [
+  "Requirement Error",
+  "Test Environment Error",
+  "External Dependency Error",
+];
 
 export function formatValueToSlug(value: string) {
   return value
@@ -31,19 +38,19 @@ export const getFeatureStatus = (status: number) => {
       return {
         text: "In Progress",
         class: "text-(--chart-16) border-(--chart-16)/10",
-        icon: Loader
+        icon: Loader,
       };
     case FeatureStatus.ONTIME:
       return {
         text: "On Time",
         class: "text-(--chart-7) border-(--chart-7)/10",
-        icon: CircleCheck
+        icon: CircleCheck,
       };
     default:
       return {
         text: "Late",
         class: "text-(--chart-11) border-(--chart-11)/10",
-        icon: TimerOff
+        icon: TimerOff,
       };
   }
 };
@@ -90,7 +97,7 @@ export const visibleColumns = {
   private: "Private",
   storyPoints: "Story points",
   ontimePercent: "% Tasks On Time",
-  triggeredBy: "Triggered By"
+  triggeredBy: "Triggered By",
 };
 
 // Chart color utilities
@@ -124,7 +131,7 @@ export const CHART_COLORS = [
   "var(--chart-27)",
   "var(--chart-28)",
   "var(--chart-29)",
-  "var(--chart-30)"
+  "var(--chart-30)",
 ] as const;
 
 export const getChartColor = (index: number): string => {
@@ -169,7 +176,7 @@ export const countBugsByPriority = ({
   member,
   issues,
   priorities,
-  isPostRelease = false
+  isPostRelease = false,
 }: {
   member: string;
   issues: Issue[] | CombinedIssue[];
@@ -186,8 +193,9 @@ export const countBugsByPriority = ({
       .map((category) => category.trim())
       .filter(Boolean);
 
-    const excludedCategories = ["Requirement Error", "Test Environment Error"];
-    if (categories.some((category) => excludedCategories.includes(category))) {
+    if (
+      categories.some((category) => excludedIssueCategories.includes(category))
+    ) {
       return count;
     }
 
@@ -205,5 +213,31 @@ export const countBugsByPriority = ({
     } else {
       return !hasPostReleaseCategory ? count + 1 : count;
     }
+  }, 0);
+};
+
+export const countBugsSupportedByMember = ({
+  member,
+  issues,
+}: {
+  member: string;
+  issues: Issue[] | CombinedIssue[];
+}) => {
+  const developers = getDevelopers();
+
+  if (!developers.some((dev) => dev.name === member)) {
+    return 0;
+  }
+
+  return issues.reduce((count, issue) => {
+    if (issue.triggeredBy && issue.triggeredBy.trim() !== "") {
+      const triggeredByNames = issue.triggeredBy
+        .split(",")
+        .map((name) => name.trim());
+      if (!triggeredByNames.includes(member)) {
+        return count + 1;
+      }
+    }
+    return count;
   }, 0);
 };
