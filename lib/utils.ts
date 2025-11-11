@@ -241,3 +241,7 @@ export const countBugsSupportedByMember = ({
     return count;
   }, 0);
 };
+
+export const convertBlobToFile = (blob: Blob, name: string) => {
+  return new File([blob], name, { type: blob.type });
+};

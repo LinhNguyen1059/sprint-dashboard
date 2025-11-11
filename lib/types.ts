@@ -201,3 +201,12 @@ export type ChartColorIndex =
   | 27
   | 28
   | 29;
+
+export interface Doc {
+  id: string;
+  name: string;
+}
+
+export interface DocFile extends Doc {
+  file: File;
+}

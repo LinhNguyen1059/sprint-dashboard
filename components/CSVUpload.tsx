@@ -1,20 +1,11 @@
 import React, { useState, useCallback } from "react";
 import { Upload, FileText, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 
-import { useDashboard } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import {
-  parseMultipleCSVFileObjects,
-  calculateProjects,
-  calculateSolutions,
-  calculateMembers,
-} from "@/lib/csvParser";
-import { TEAMS } from "@/lib/teams";
+import { useDocs } from "@/hooks/use-docs";
 
 const CSVUpload: React.FC = () => {
-  const router = useRouter();
-  const { setData, setProjects, setSolutions, setMembers } = useDashboard();
+  const { parseDocsAndGo } = useDocs();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -88,23 +79,23 @@ const CSVUpload: React.FC = () => {
   const handleUpload = async () => {
     setLoading(true);
     try {
-      // Parse all uploaded files into a single combined array
-      const combinedIssues = await parseMultipleCSVFileObjects(uploadedFiles);
-      setData(combinedIssues);
+      if (uploadedFiles.length > 0) {
+        const uploadPromises = uploadedFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("fileName", file.name);
 
-      // Calculate projects from the combined data
-      const projects = calculateProjects(combinedIssues);
-      setProjects(projects);
+          return await fetch("/api/v1/upload", {
+            method: "POST",
+            body: formData,
+          });
+        });
 
-      // Calculate solutions from the combined data
-      const solutions = calculateSolutions(combinedIssues);
-      setSolutions(solutions);
+        // Wait for all uploads to complete
+        await Promise.all(uploadPromises);
+      }
 
-      // Calculate members from the combined data and teams
-      const members = calculateMembers(combinedIssues, TEAMS);
-      setMembers(members);
-
-      router.push("/projects");
+      parseDocsAndGo(uploadedFiles);
     } catch (error) {
       console.error("Error parsing CSV files:", error);
       alert("Error parsing CSV files. Please check the console for details.");
@@ -130,7 +121,7 @@ const CSVUpload: React.FC = () => {
           >
             <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Upload Sprint Data CSV
+              Upload OKR Data CSV
             </h3>
             <p className="text-gray-600 mb-4">
               Drag and drop your CSV files here, or click to select
