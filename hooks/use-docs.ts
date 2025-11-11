@@ -1,41 +1,90 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { FileObject } from '@supabase/storage-js';
+import { useDashboard } from '@/components/DashboardLayout';
+import { Doc } from '@/lib/types';
+import { convertBlobToFile } from '@/lib/utils';
+import { calculateMembers, calculateProjects, calculateSolutions, parseMultipleCSVFileObjects } from '@/lib/csvParser';
+import { TEAMS } from '@/lib/teams';
 
-export const useGetDocs = () => {
-  const [docs, setDocs] = useState<FileObject[]>([]);
+export const useDocs = () => {
+  const { setDocs, setOpenSheet, setData, setProjects, setSolutions, setMembers } = useDashboard();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
-  useEffect(() => {
-    const fetchDocs = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/v1/list');
-        
+  const router = useRouter();
+
+  const getDocs = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/v1/list');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      setDocs(result.docs || []);
+    } catch (err) {
+      console.error("Error fetching docs:", err);
+      setDocs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadDocs = async (docs: Doc[]) => {
+    setDownloading(true);
+    try {
+      const downloadPromises = docs.map(async (doc) => {
+        const response = await fetch(`/api/v1/download?name=${doc.name}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const result = await response.json();
-        
-        if (result.error) {
-          throw new Error(result.error);
-        }
-        
-        setDocs(result.docs || []);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching docs:", err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        setDocs([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+        const blob = await response.blob();
 
-    fetchDocs();
-  }, []);
+        return blob;
+      });
 
-  return { docs, loading, error };
+      const blobs = await Promise.all(downloadPromises);
+
+      const files = blobs.map((blob, index) => {
+        const file = convertBlobToFile(blob, docs[index].name);
+        return file;
+      });
+
+      parseDocsAndGo(files);
+      setOpenSheet(false);
+    } catch (err) {
+      console.error("Error downloading doc:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const parseDocsAndGo = async (docs: File[]) => {
+    const combinedIssues = await parseMultipleCSVFileObjects(docs);
+    setData(combinedIssues);
+
+    // Calculate projects from the combined data
+    const projects = calculateProjects(combinedIssues);
+    setProjects(projects);
+
+    // Calculate solutions from the combined data
+    const solutions = calculateSolutions(combinedIssues);
+    setSolutions(solutions);
+
+    // Calculate members from the combined data and teams
+    const members = calculateMembers(combinedIssues, TEAMS);
+    setMembers(members);
+
+    router.push("/projects");
+  };
+
+  return { loading, downloading, getDocs, downloadDocs, parseDocsAndGo };
 };

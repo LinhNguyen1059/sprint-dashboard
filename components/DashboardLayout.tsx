@@ -9,6 +9,8 @@ import {
   Project,
   Solution,
   Member,
+  Doc,
+  DocFile,
 } from "@/lib/types";
 import { AppSidebar } from "./Sidebar/AppSidebar";
 import { useMounted } from "@/hooks/use-mount";
@@ -22,6 +24,10 @@ interface DashboardContextType {
   setSolutions: React.Dispatch<React.SetStateAction<Solution[]>>;
   members: Member[];
   setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  docs: Doc[];
+  setDocs: React.Dispatch<React.SetStateAction<Doc[]>>;
+  openSheet: boolean;
+  setOpenSheet: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -43,6 +49,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [solutions, setSolutions] = React.useState<Solution[]>([]);
   const [members, setMembers] = React.useState<Member[]>([]);
+  const [docs, setDocs] = React.useState<Doc[]>([]);
+  const [openSheet, setOpenSheet] = React.useState<boolean>(false);
 
   const mounted = useMounted();
 
@@ -74,6 +82,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         setSolutions,
         members,
         setMembers,
+        docs,
+        setDocs,
+        openSheet,
+        setOpenSheet,
       }}
     >
       <main className="mx-auto">

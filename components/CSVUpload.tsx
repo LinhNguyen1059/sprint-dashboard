@@ -1,20 +1,11 @@
 import React, { useState, useCallback } from "react";
 import { Upload, FileText, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 
-import { useDashboard } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import {
-  parseMultipleCSVFileObjects,
-  calculateProjects,
-  calculateSolutions,
-  calculateMembers
-} from "@/lib/csvParser";
-import { TEAMS } from "@/lib/teams";
+import { useDocs } from "@/hooks/use-docs";
 
 const CSVUpload: React.FC = () => {
-  const router = useRouter();
-  const { setData, setProjects, setSolutions, setMembers } = useDashboard();
+  const { parseDocsAndGo } = useDocs();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -96,30 +87,15 @@ const CSVUpload: React.FC = () => {
 
           return await fetch("/api/v1/upload", {
             method: "POST",
-            body: formData
+            body: formData,
           });
         });
 
         // Wait for all uploads to complete
         await Promise.all(uploadPromises);
       }
-      // Parse all uploaded files into a single combined array
-      const combinedIssues = await parseMultipleCSVFileObjects(uploadedFiles);
-      setData(combinedIssues);
 
-      // Calculate projects from the combined data
-      const projects = calculateProjects(combinedIssues);
-      setProjects(projects);
-
-      // Calculate solutions from the combined data
-      const solutions = calculateSolutions(combinedIssues);
-      setSolutions(solutions);
-
-      // Calculate members from the combined data and teams
-      const members = calculateMembers(combinedIssues, TEAMS);
-      setMembers(members);
-
-      router.push("/projects");
+      parseDocsAndGo(uploadedFiles);
     } catch (error) {
       console.error("Error parsing CSV files:", error);
       alert("Error parsing CSV files. Please check the console for details.");
