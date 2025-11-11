@@ -8,7 +8,7 @@ import {
   parseMultipleCSVFileObjects,
   calculateProjects,
   calculateSolutions,
-  calculateMembers,
+  calculateMembers
 } from "@/lib/csvParser";
 import { TEAMS } from "@/lib/teams";
 
@@ -88,6 +88,21 @@ const CSVUpload: React.FC = () => {
   const handleUpload = async () => {
     setLoading(true);
     try {
+      if (uploadedFiles.length > 0) {
+        const uploadPromises = uploadedFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("fileName", file.name);
+
+          return await fetch("/api/v1/upload", {
+            method: "POST",
+            body: formData
+          });
+        });
+
+        // Wait for all uploads to complete
+        await Promise.all(uploadPromises);
+      }
       // Parse all uploaded files into a single combined array
       const combinedIssues = await parseMultipleCSVFileObjects(uploadedFiles);
       setData(combinedIssues);
@@ -130,7 +145,7 @@ const CSVUpload: React.FC = () => {
           >
             <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Upload Sprint Data CSV
+              Upload OKR Data CSV
             </h3>
             <p className="text-gray-600 mb-4">
               Drag and drop your CSV files here, or click to select
