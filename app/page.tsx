@@ -1,12 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Target } from "lucide-react";
 
 import CSVUpload from "@/components/CSVUpload";
 import { ProjectSheet } from "@/components/ProjectSheet";
+import { LoginDialog } from "@/components/LoginDialog";
 
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check for access_token in cookies
+    const checkAuth = () => {
+      const cookies = document.cookie.split(";");
+      const accessTokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("access_token=")
+      );
+      setIsAuthenticated(!!accessTokenCookie);
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
   return (
     <div className="text-center py-16">
       <div className="max-w-md mx-auto">
@@ -36,11 +56,15 @@ export default function Home() {
               className="bg-background text-muted-foreground relative mx-auto block w-fit px-2"
               data-slot="field-separator-content"
             >
-              Or continue with
+              Or
             </span>
           </div>
 
-          <CSVUpload />
+          {isAuthenticated ? (
+            <CSVUpload />
+          ) : (
+            <LoginDialog onLoginSuccess={handleLoginSuccess} />
+          )}
         </div>
       </div>
     </div>

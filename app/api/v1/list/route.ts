@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { supabase } from "@/lib/supabase";
+import { createAuthenticatedClient } from "@/lib/supabase";
 
 export async function GET() {
   try {
+    const supabase = createAuthenticatedClient(`${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`);
     const { data, error } = await supabase.storage
       .from("docs").list(undefined, { limit: 100 }, {});
 

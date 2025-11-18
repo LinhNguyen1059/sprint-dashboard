@@ -85,10 +85,18 @@ const CSVUpload: React.FC = () => {
           formData.append("file", file);
           formData.append("fileName", file.name);
 
-          return await fetch("/api/v1/upload", {
+          const response = await fetch("/api/v1/upload", {
             method: "POST",
             body: formData,
+            credentials: "include" // Important: Include cookies in the request
           });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Upload failed");
+          }
+
+          return response;
         });
 
         // Wait for all uploads to complete
@@ -98,7 +106,18 @@ const CSVUpload: React.FC = () => {
       parseDocsAndGo(uploadedFiles);
     } catch (error) {
       console.error("Error parsing CSV files:", error);
-      alert("Error parsing CSV files. Please check the console for details.");
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+
+      if (errorMessage.includes("Unauthorized")) {
+        alert("Your session has expired. Please log in again.");
+        // Clear the access token cookie
+        document.cookie = "access_token=; path=/; max-age=0";
+        // Reload the page to show login
+        window.location.reload();
+      } else {
+        alert(`Error uploading files: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }

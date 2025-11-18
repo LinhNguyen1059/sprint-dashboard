@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createAuthenticatedClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
+    // Get the access token from cookies
+    const accessToken = req.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: "Unauthorized - No access token provided" },
+        { status: 401 }
+      );
+    }
+
+    // Create an authenticated Supabase client with the user's access token
+    const supabase = createAuthenticatedClient(accessToken);
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const fileName = formData.get("fileName") as string;
@@ -21,9 +34,6 @@ export async function POST(req: NextRequest) {
       .from("docs")
       .upload(fileName, buffer, {
         upsert: true,
-        headers: {
-          "Authorization": `${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`
-        }
       });
 
     if (error) {
