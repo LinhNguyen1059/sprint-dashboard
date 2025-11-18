@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
-  VisibilityState,
+  VisibilityState
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +25,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
   Table,
@@ -33,7 +33,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
 import { Feature } from "@/lib/types";
 import { Progress } from "../ui/progress";
@@ -41,14 +41,14 @@ import {
   bugTrackerUrl,
   cn,
   getFeatureStatus,
-  visibleColumns,
+  visibleColumns
 } from "@/lib/utils";
 
 // Define a reusable component for sortable headers
 const SortableHeader = ({
   column,
   title,
-  className = "",
+  className = ""
 }: {
   column: Column<Feature>;
   title: string;
@@ -75,7 +75,7 @@ const SortableHeader = ({
 export function FeatureTable({
   data: initialData,
   slug,
-  route,
+  route
 }: {
   data: Feature[];
   slug: string;
@@ -102,7 +102,7 @@ export function FeatureTable({
         >
           {row.original.id}
         </Link>
-      ),
+      )
     },
     {
       accessorKey: "subject",
@@ -119,8 +119,22 @@ export function FeatureTable({
           </Button>
         </Link>
       ),
-      enableHiding: false,
+      enableHiding: false
     },
+    ...(route === "solutions"
+      ? [
+          {
+            accessorKey: "projectName" as const,
+            header: ({ column }: { column: Column<Feature> }) => (
+              <SortableHeader column={column} title="Project" />
+            ),
+            cell: ({ row }: { row: { original: Feature } }) => (
+              <div>{row.original.projectName}</div>
+            ),
+            enableHiding: false
+          }
+        ]
+      : ([] as ColumnDef<Feature>[])),
     {
       accessorKey: "percentDone",
       header: ({ column }) => (
@@ -135,7 +149,7 @@ export function FeatureTable({
           />
           <span className="">{row.original.percentDone}%</span>
         </div>
-      ),
+      )
     },
     {
       accessorKey: "dueStatus",
@@ -151,7 +165,7 @@ export function FeatureTable({
             {status.text}
           </Badge>
         );
-      },
+      }
     },
     {
       accessorKey: "totalSpentTime",
@@ -166,7 +180,7 @@ export function FeatureTable({
         <div className="text-right">
           {Math.round(row.original.totalSpentTime)} hrs
         </div>
-      ),
+      )
     },
     {
       accessorKey: "criticalBugs",
@@ -179,7 +193,7 @@ export function FeatureTable({
       ),
       cell: ({ row }) => (
         <div className="text-right">{row.original.criticalBugs}</div>
-      ),
+      )
     },
     {
       accessorKey: "highBugs",
@@ -192,7 +206,7 @@ export function FeatureTable({
       ),
       cell: ({ row }) => (
         <div className="text-right">{row.original.highBugs}</div>
-      ),
+      )
     },
     {
       accessorKey: "postReleaseBugs",
@@ -205,8 +219,8 @@ export function FeatureTable({
       ),
       cell: ({ row }) => (
         <div className="text-right">{row.original.postReleaseBugs}</div>
-      ),
-    },
+      )
+    }
   ];
 
   const table = useReactTable({
@@ -215,7 +229,7 @@ export function FeatureTable({
     state: {
       sorting,
       columnVisibility,
-      columnFilters,
+      columnFilters
     },
     getRowId: (row) => row.id.toString(),
     enableRowSelection: true,
@@ -227,7 +241,7 @@ export function FeatureTable({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getFacetedUniqueValues: getFacetedUniqueValues()
   });
 
   return (

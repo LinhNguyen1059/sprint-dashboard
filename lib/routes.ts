@@ -11,11 +11,11 @@ export const routes = [
     url: "/solutions",
     icon: Lightbulb,
   },
-  {
-    title: "Teams",
-    url: "/teams",
-    icon: Users,
-  },
+  // {
+  //   title: "Teams",
+  //   url: "/teams",
+  //   icon: Users,
+  // },
   {
     title: "Members",
     url: "/members",
