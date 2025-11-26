@@ -93,7 +93,7 @@ export const TEAMS = [
       { name: "Vu Pham", role: MEMBER_ROLE.TESTER },
       { name: "Nhung Nguyen", role: MEMBER_ROLE.TESTER },
       { name: "Khoa Hoang", role: MEMBER_ROLE.TESTER },
-      { name: "ThiThanh Nguyen", role: MEMBER_ROLE.TESTER },
+      { name: "Thi Thanh Nguyen", role: MEMBER_ROLE.TESTER },
       { name: "Tran Nguyen", role: MEMBER_ROLE.TESTER }
     ]
   }
