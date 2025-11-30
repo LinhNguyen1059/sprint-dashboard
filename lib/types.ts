@@ -205,6 +205,7 @@ export type ChartColorIndex =
 export interface Doc {
   id: string;
   name: string;
+  updated_at: string;
 }
 
 export interface DocFile extends Doc {

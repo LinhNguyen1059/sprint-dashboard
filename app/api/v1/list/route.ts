@@ -14,7 +14,11 @@ export async function GET() {
     }
 
     // Check if data is null or undefined
-    const docsToSend = data || [];
+    const docsToSend = (data || []).map(file => ({
+      id: file.id,
+      name: file.name,
+      updated_at: file.updated_at
+    }));
 
     return NextResponse.json({
       docs: docsToSend,

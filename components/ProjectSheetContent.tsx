@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { File } from "lucide-react";
+import { CalendarClock, File } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -103,6 +103,10 @@ export function ProjectSheetContent({ loading }: { loading: boolean }) {
                 <div className="py-2 px-1 border-t border-gray-200">
                   <p className="text-sm font-medium leading-none whitespace-nowrap text-ellipsis w-full overflow-hidden">
                     {doc.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <CalendarClock size={14} />{" "}
+                    {new Date(doc.updated_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
