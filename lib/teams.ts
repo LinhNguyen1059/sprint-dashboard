@@ -99,7 +99,7 @@ export const TEAMS = [
   }
 ];
 
-export const getMembers = () => TEAMS.flatMap((team) => team.members);
+export const getMembers = () => TEAMS.flatMap((team) => team.members).filter((member) => member.name !== "Dung Tran");
 
 export const getDevelopers = () =>
   TEAMS.filter((team) => team.name !== "TESTER" && team.name !== "Data Mining")

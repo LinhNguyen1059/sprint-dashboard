@@ -382,8 +382,19 @@ function calculateMembersInProject(issues: CombinedIssue[]) {
       (issue.assignee && issue.assignee.trim() !== "") ||
       (issue.doneBy && issue.doneBy.trim() !== "")
     ) {
-      uniqueAssignees.add(issue.assignee.trim());
-      uniqueAssignees.add(issue.doneBy.trim());
+      const assigneeNames = issue.assignee.split(",").map((name) => name.trim());
+      assigneeNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          uniqueAssignees.add(name);
+        }
+      });
+
+      const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+      doneByNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          uniqueAssignees.add(name);
+        }
+      });
     }
   });
   const allMembers = getMembers();
@@ -520,29 +531,7 @@ export function calculateMembers(
     });
   });
 
-  // If no teams are defined, extract member names from the issues data as a fallback
-  const useFallback = teams.length === 0;
-  if (useFallback) {
-    issues.forEach((issue) => {
-      if (issue.assignee && issue.assignee.trim() !== "") {
-        const assignee = issue.assignee.trim();
-        if (validMemberNames.has(assignee) || useFallback) {
-          validMemberNames.add(assignee);
-        }
-      }
-      if (issue.doneBy && issue.doneBy.trim() !== "") {
-        const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
-        doneByNames.forEach((name) => {
-          if (name && name.trim() !== "") {
-            const doneByName = name.trim();
-            if (validMemberNames.has(doneByName) || useFallback) {
-              validMemberNames.add(doneByName);
-            }
-          }
-        });
-      }
-    });
-  }
+  validMemberNames.delete("Dung Tran");
 
   // Create a map of member names to their stats
   const memberMap: Record<string, Member> = {};
@@ -551,35 +540,50 @@ export function calculateMembers(
   issues.forEach((issue) => {
     // Process assignee
     if (issue.assignee && issue.assignee.trim() !== "") {
-      const assignee = issue.assignee.trim();
+      const assigneeNames = issue.assignee.split(",").map((name) => name.trim());
 
-      // Only process if the assignee is in our valid members list (or if using fallback)
-      if (validMemberNames.has(assignee) || useFallback) {
-        if (!memberMap[assignee]) {
-          memberMap[assignee] = {
-            slug: formatValueToSlug(assignee),
-            name: assignee,
-            issues: [],
-            projects: [],
-            role: getMemberRole(assignee),
-          };
+      assigneeNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          const assigneeName = name.trim();
+
+          if (assigneeName === "Dung Tran") {
+            return;
+          }
+
+          // Only process if the assignee is in our valid members list (or if using fallback)
+          if (validMemberNames.has(assigneeName)) {
+            if (!memberMap[assigneeName]) {
+              memberMap[assigneeName] = {
+                slug: formatValueToSlug(assigneeName),
+                name: assigneeName,
+                issues: [],
+                projects: [],
+                role: getMemberRole(assigneeName),
+              };
+            }
+            memberMap[assigneeName].issues.push(issue);
+            if (!memberMap[assigneeName].projects.includes(issue.projectName)) {
+              memberMap[assigneeName].projects.push(issue.projectName);
+            }
+          }
         }
-        memberMap[assignee].issues.push(issue);
-        if (!memberMap[assignee].projects.includes(issue.projectName)) {
-          memberMap[assignee].projects.push(issue.projectName);
-        }
-      }
+      });
     }
 
     // Process doneBy (could be multiple names separated by commas)
     if (issue.doneBy && issue.doneBy.trim() !== "") {
       const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+
       doneByNames.forEach((name) => {
         if (name && name.trim() !== "") {
           const doneByName = name.trim();
 
+          if (doneByName === "Dung Tran") {
+            return;
+          }
+
           // Only process if the doneBy name is in our valid members list (or if using fallback)
-          if (validMemberNames.has(doneByName) || useFallback) {
+          if (validMemberNames.has(doneByName)) {
             if (!memberMap[doneByName]) {
               memberMap[doneByName] = {
                 slug: formatValueToSlug(doneByName),
@@ -610,8 +614,12 @@ export function calculateMembers(
         if (name && name.trim() !== "") {
           const triggeredByName = name.trim();
 
+          if (triggeredByName === "Dung Tran") {
+            return;
+          }
+
           // Only process if the doneBy name is in our valid members list (or if using fallback)
-          if (validMemberNames.has(triggeredByName) || useFallback) {
+          if (validMemberNames.has(triggeredByName)) {
             if (!memberMap[triggeredByName]) {
               memberMap[triggeredByName] = {
                 slug: formatValueToSlug(triggeredByName),

@@ -43,10 +43,17 @@ export function LoginDialog({ onLoginSuccess }: LoginDialogProps) {
       }
 
       if (data.session?.access_token) {
-        // Set the access token in a cookie
+        // Set the access token in a cookie (1 hour to match JWT expiry)
         document.cookie = `access_token=${
           data.session.access_token
-        }; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
+        }; path=/; max-age=${60 * 60}`; // 1 hour
+
+        // Set the refresh token in a cookie (30 days)
+        if (data.session?.refresh_token) {
+          document.cookie = `refresh_token=${
+            data.session.refresh_token
+          }; path=/; max-age=${60 * 60 * 24 * 30}`; // 30 days
+        }
 
         setOpen(false);
         setEmail("");

@@ -28,8 +28,10 @@ export const useDocs = () => {
       if (result.error) {
         throw new Error(result.error);
       }
-      
-      setDocs(result.docs || []);
+
+      const docs: Doc[] = result.docs?.filter((doc: Doc) => !doc.name.startsWith('.emptyFolderPlaceholder')) || [];
+
+      setDocs(docs);
     } catch (err) {
       console.error("Error fetching docs:", err);
       setDocs([]);

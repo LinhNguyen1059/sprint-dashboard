@@ -91,9 +91,19 @@ const CSVUpload: React.FC = () => {
             credentials: "include" // Important: Include cookies in the request
           });
 
+          const responseData = await response.json();
+
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Upload failed");
+            // Check if session expired (both tokens invalid)
+            if (responseData.sessionExpired) {
+              throw new Error("SESSION_EXPIRED");
+            }
+            throw new Error(responseData.error || "Upload failed");
+          }
+
+          // Check if token was refreshed and update the cookie
+          if (responseData.tokenRefreshed) {
+            console.log("Access token was refreshed automatically");
           }
 
           return response;
@@ -109,10 +119,15 @@ const CSVUpload: React.FC = () => {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
 
-      if (errorMessage.includes("Unauthorized")) {
+      if (
+        errorMessage === "SESSION_EXPIRED" ||
+        errorMessage.includes("Session expired") ||
+        errorMessage.includes("Unauthorized")
+      ) {
         alert("Your session has expired. Please log in again.");
-        // Clear the access token cookie
+        // Clear both tokens
         document.cookie = "access_token=; path=/; max-age=0";
+        document.cookie = "refresh_token=; path=/; max-age=0";
         // Reload the page to show login
         window.location.reload();
       } else {
