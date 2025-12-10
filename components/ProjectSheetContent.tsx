@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { CalendarClock, File } from "lucide-react";
+import { CalendarClock, File, Loader, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -10,8 +10,8 @@ import { Label } from "./ui/label";
 import { useDocs } from "@/hooks/use-docs";
 
 export function ProjectSheetContent({ loading }: { loading: boolean }) {
-  const { docs } = useDashboard();
-  const { downloading, downloadDocs } = useDocs();
+  const { docs, isAuthenticated } = useDashboard();
+  const { downloading, deleting, downloadDocs, deleteDocs } = useDocs();
 
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -40,21 +40,51 @@ export function ProjectSheetContent({ loading }: { loading: boolean }) {
     downloadDocs(docs.filter((doc) => selected.includes(doc.id)));
   };
 
+  const onDelete = async () => {
+    await deleteDocs(docs.filter((doc) => selected.includes(doc.id)));
+    setSelected([]);
+  };
+
   const renderHeader = useCallback(() => {
     if (loading || docs.length === 0) {
       return null;
     }
     return (
-      <div className="flex items-center gap-3 px-4">
-        <Checkbox
-          id="checkbox"
-          checked={selected.length === docs.length}
-          onCheckedChange={onSelectAll}
-        />
-        <Label htmlFor="checkbox">All projects</Label>
+      <div className="flex items-center px-4 justify-between h-8">
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id="checkbox"
+            checked={selected.length === docs.length}
+            onCheckedChange={onSelectAll}
+          />
+          <Label htmlFor="checkbox">All projects</Label>
+        </div>
+
+        {isAuthenticated && selected.length > 0 && (
+          <Button
+            variant="link"
+            size="sm"
+            onClick={onDelete}
+            disabled={downloading || deleting}
+          >
+            {deleting ? (
+              <Loader className="animate-spin" />
+            ) : (
+              <Trash2 className="text-red-500" />
+            )}
+          </Button>
+        )}
       </div>
     );
-  }, [loading, docs, onSelectAll, selected]);
+  }, [
+    loading,
+    docs,
+    onSelectAll,
+    selected,
+    isAuthenticated,
+    downloading,
+    deleting
+  ]);
 
   const renderContent = useCallback(() => {
     if (loading) {
@@ -91,6 +121,7 @@ export function ProjectSheetContent({ loading }: { loading: boolean }) {
                   selected.includes(doc.id) && "border-primary"
                 )}
                 onClick={() => onSelect(doc.id)}
+                title={doc.name}
               >
                 <div
                   className={cn(
@@ -133,7 +164,11 @@ export function ProjectSheetContent({ loading }: { loading: boolean }) {
       </div>
       <SheetFooter>
         {selected.length > 0 && (
-          <Button type="submit" disabled={downloading} onClick={onAdd}>
+          <Button
+            type="submit"
+            disabled={downloading || deleting}
+            onClick={onAdd}
+          >
             {downloading ? "Adding..." : "Add"}
           </Button>
         )}

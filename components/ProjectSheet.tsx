@@ -19,7 +19,7 @@ export function ProjectSheet() {
       <SheetTrigger asChild>
         <Button>Choose projects</Button>
       </SheetTrigger>
-      <SheetContent aria-describedby={undefined}>
+      <SheetContent aria-describedby={undefined} className="gap-0">
         <ProjectSheetContent loading={loading} />
       </SheetContent>
     </Sheet>

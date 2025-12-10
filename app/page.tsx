@@ -6,9 +6,10 @@ import { Target } from "lucide-react";
 import CSVUpload from "@/components/CSVUpload";
 import { ProjectSheet } from "@/components/ProjectSheet";
 import { LoginDialog } from "@/components/LoginDialog";
+import { useDashboard } from "@/components/DashboardLayout";
 
 export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, setIsAuthenticated } = useDashboard();
 
   useEffect(() => {
     // Check for access_token in cookies

@@ -11,6 +11,7 @@ export const useDocs = () => {
   const { setDocs, setOpenSheet, setData, setProjects, setSolutions, setMembers } = useDashboard();
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const router = useRouter();
 
@@ -88,5 +89,34 @@ export const useDocs = () => {
     router.push("/projects");
   };
 
-  return { loading, downloading, getDocs, downloadDocs, parseDocsAndGo };
+  const deleteDocs = async (docs: Doc[]) => {
+    try {
+      setDeleting(true);
+      const deletePromises = docs.map(async (doc) => {
+        const response = await fetch(`/api/v1/delete?name=${doc.name}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          throw new Error(result.error);
+        }
+      });
+
+      await Promise.all(deletePromises);
+      // Refresh the docs list after deletion
+      await getDocs();
+    } catch (err) {
+      console.error("Error deleting docs:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return { loading, downloading, deleting, getDocs, downloadDocs, parseDocsAndGo, deleteDocs };
 };
