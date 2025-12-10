@@ -37,10 +37,10 @@ export async function getAuthenticatedSupabase(
   };
 }
 
-export interface RetryWithRefreshOptions {
+export interface RetryWithRefreshOptions<T = unknown> {
   refreshToken?: string;
-  operation: (supabase: ReturnType<typeof createAuthenticatedClient>) => Promise<{ data: any; error: any }>;
-  successResponse: (data: any) => any;
+  operation: (supabase: ReturnType<typeof createAuthenticatedClient>) => Promise<{ data: T; error: Error | null }>;
+  successResponse: (data: T) => Record<string, unknown>;
   errorMessage: string;
 }
 

@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
         operation: (supabase) => supabase.storage
           .from("docs")
           .upload(fileName, buffer, { upsert: true }),
-        successResponse: (data) => ({
+        successResponse: (data: unknown) => ({
           success: true,
-          path: data?.path || "",
+          path: (data as { path: string } | null)?.path || "",
           message: "File uploaded successfully",
         }),
         errorMessage: "Error uploading file:",
