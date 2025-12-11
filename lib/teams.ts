@@ -110,3 +110,7 @@ export const getMemberRole = (memberName: string) => {
   const member = getMembers().find((member) => member.name === memberName);
   return member ? member.role : MEMBER_ROLE.OTHER;
 };
+
+export const getTestersNames = () => {
+  return TEAMS.find((team) => team.name === "TESTER")?.members.map((member) => member.name) || [];
+}

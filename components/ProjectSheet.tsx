@@ -7,7 +7,7 @@ import { useDocs } from "@/hooks/use-docs";
 import { useDashboard } from "./DashboardLayout";
 
 export function ProjectSheet() {
-  const { loading, getDocs } = useDocs();
+  const { getDocs } = useDocs();
   const { openSheet, setOpenSheet } = useDashboard();
 
   useEffect(() => {
@@ -19,8 +19,11 @@ export function ProjectSheet() {
       <SheetTrigger asChild>
         <Button>Choose projects</Button>
       </SheetTrigger>
-      <SheetContent aria-describedby={undefined} className="gap-0">
-        <ProjectSheetContent loading={loading} />
+      <SheetContent
+        aria-describedby={undefined}
+        className="gap-0 w-1/2 !max-w-full"
+      >
+        <ProjectSheetContent />
       </SheetContent>
     </Sheet>
   );

@@ -1,178 +1,94 @@
-import { useCallback, useState } from "react";
-import { CalendarClock, File, Loader, Trash2 } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useDashboard } from "./DashboardLayout";
-import { cn } from "@/lib/utils";
-import { Checkbox } from "./ui/checkbox";
-import { Label } from "./ui/label";
 import { useDocs } from "@/hooks/use-docs";
+import { DocsTable } from "./DocsTable";
+import { ArrowRight, Search, Trash2, X } from "lucide-react";
+import { Input } from "./ui/input";
+import { useState } from "react";
+import { Separator } from "./ui/separator";
+import { Button } from "./ui/button";
 
-export function ProjectSheetContent({ loading }: { loading: boolean }) {
+export function ProjectSheetContent() {
   const { docs, isAuthenticated } = useDashboard();
   const { downloading, deleting, downloadDocs, deleteDocs } = useDocs();
 
-  const [selected, setSelected] = useState<string[]>([]);
-
-  const onSelect = useCallback(
-    (id: string) => {
-      setSelected((prev) => {
-        if (prev.includes(id)) {
-          return prev.filter((docId) => docId !== id);
-        } else {
-          return [...prev, id];
-        }
-      });
-    },
-    [selected]
-  );
-
-  const onSelectAll = useCallback(() => {
-    if (selected.length === docs.length) {
-      setSelected([]);
-    } else {
-      setSelected(docs.map((doc) => doc.id));
-    }
-  }, [selected, docs, setSelected]);
+  const [search, setSearch] = useState<string>("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const onAdd = () => {
-    downloadDocs(docs.filter((doc) => selected.includes(doc.id)));
+    downloadDocs(docs.filter((doc) => selectedIds.includes(doc.id)));
   };
 
   const onDelete = async () => {
-    await deleteDocs(docs.filter((doc) => selected.includes(doc.id)));
-    setSelected([]);
+    await deleteDocs(docs.filter((doc) => selectedIds.includes(doc.id)));
+    setSelectedIds([]);
   };
 
-  const renderHeader = useCallback(() => {
-    if (loading || docs.length === 0) {
-      return null;
-    }
-    return (
-      <div className="flex items-center px-4 justify-between h-8">
-        <div className="flex items-center gap-3">
-          <Checkbox
-            id="checkbox"
-            checked={selected.length === docs.length}
-            onCheckedChange={onSelectAll}
-          />
-          <Label htmlFor="checkbox">All projects</Label>
-        </div>
-
-        {isAuthenticated && selected.length > 0 && (
-          <Button
-            variant="link"
-            size="sm"
-            onClick={onDelete}
-            disabled={downloading || deleting}
-          >
-            {deleting ? (
-              <Loader className="animate-spin" />
-            ) : (
-              <Trash2 className="text-red-500" />
-            )}
-          </Button>
-        )}
-      </div>
-    );
-  }, [
-    loading,
-    docs,
-    onSelectAll,
-    selected,
-    isAuthenticated,
-    downloading,
-    deleting
-  ]);
-
-  const renderContent = useCallback(() => {
-    if (loading) {
-      return (
-        <div className="grid grid-cols-2 gap-4 px-4">
-          <>
-            {Array(4)
-              .fill(0)
-              .map((_, index) => (
-                <div
-                  className="animate-pulse border border-gray-200 rounded-lg transition-all duration-200 overflow-hidden"
-                  key={index}
-                >
-                  <div className="w-full aspect-video flex items-center justify-center bg-gray-200"></div>
-                  <div className="py-2 px-1 border-t border-gray-200">
-                    <div className="h-2 rounded bg-gray-200"></div>
-                  </div>
-                </div>
-              ))}
-          </>
-        </div>
-      );
-    }
-
-    if (docs.length > 0) {
-      return (
-        <div className="grid grid-cols-2 gap-4 px-4">
-          <>
-            {docs.map((doc) => (
-              <div
-                key={doc.id}
-                className={cn(
-                  "border border-gray-200 rounded-lg transition-all duration-200 hover:border-primary cursor-pointer overflow-hidden group",
-                  selected.includes(doc.id) && "border-primary"
-                )}
-                onClick={() => onSelect(doc.id)}
-                title={doc.name}
-              >
-                <div
-                  className={cn(
-                    "w-full aspect-video flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors duration-200 rounded-t-lg",
-                    selected.includes(doc.id) && "bg-gray-200"
-                  )}
-                >
-                  <File size={50} />
-                </div>
-                <div className="py-2 px-1 border-t border-gray-200">
-                  <p className="text-sm font-medium leading-none whitespace-nowrap text-ellipsis w-full overflow-hidden">
-                    {doc.name}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                    <CalendarClock size={14} />{" "}
-                    {new Date(doc.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </>
-        </div>
-      );
-    }
-    return (
-      <div className="flex flex-col items-center w-full h-full">
-        No files uploaded
-      </div>
-    );
-  }, [loading, docs, selected, onSelect]);
+  const onRowSelectionChange = (rowSelection: { [key: string]: boolean }) => {
+    const selected = Object.keys(rowSelection).filter((id) => rowSelection[id]);
+    setSelectedIds(selected);
+  };
 
   return (
     <>
       <SheetHeader>
         <SheetTitle>Project files</SheetTitle>
       </SheetHeader>
-      {renderHeader()}
       <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
-        {renderContent()}
+        <div className="px-4">
+          <div className="flex items-center gap-2 justify-between w-full pt-1 mb-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search members..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
+              {search.length > 0 && (
+                <div
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1.5 cursor-pointer p-1 rounded-sm transition-colors duration-75 hover:bg-gray-100"
+                >
+                  <X size={16} />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              {selectedIds.length > 0 && (
+                <>
+                  <div className="text-sm">
+                    {selectedIds.length} items selected
+                  </div>
+                  <Separator orientation="vertical" className="!h-4" />
+                  {isAuthenticated && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={onDelete}
+                      disabled={downloading || deleting}
+                    >
+                      {deleting ? "Deleting..." : "Delete"} <Trash2 />
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={onAdd}
+                    disabled={downloading || downloading}
+                  >
+                    {downloading ? "Downloading..." : "Continue"} <ArrowRight />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          <DocsTable
+            data={docs}
+            onRowSelectionChange={onRowSelectionChange}
+            search={search}
+          />
+        </div>
       </div>
-      <SheetFooter>
-        {selected.length > 0 && (
-          <Button
-            type="submit"
-            disabled={downloading || deleting}
-            onClick={onAdd}
-          >
-            {downloading ? "Adding..." : "Add"}
-          </Button>
-        )}
-      </SheetFooter>
     </>
   );
 }

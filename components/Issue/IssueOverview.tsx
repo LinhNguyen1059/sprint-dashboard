@@ -60,7 +60,7 @@ export function IssueOverview({ data, issues, actions }: IssueOverviewProps) {
       // Bug severity metrics from data data
       criticalBugs: data.criticalBugs || 0,
       highBugs: data.highBugs || 0,
-      postReleaseBugs: data.postReleaseBugs || 0
+      postReleaseBugs: data.postReleaseBugs || 0,
     };
   }, [data, issues]);
 

@@ -17,7 +17,9 @@ export async function GET() {
     const docsToSend = (data || []).map(file => ({
       id: file.id,
       name: file.name,
-      updated_at: file.updated_at
+      created_at: file.created_at,
+      updated_at: file.updated_at,
+      size: file.metadata?.size || 0,
     }));
 
     return NextResponse.json({

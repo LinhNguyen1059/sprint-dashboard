@@ -184,7 +184,7 @@ export const countBugsByPriority = ({
   isPostRelease?: boolean;
 }): number => {
   return issues.reduce((count, issue) => {
-    if (issue.triggeredBy && issue.triggeredBy !== member) {
+    if (issue.triggeredBy && !issue.triggeredBy.includes(member)) {
       return count;
     }
 
@@ -244,4 +244,19 @@ export const countBugsSupportedByMember = ({
 
 export const convertBlobToFile = (blob: Blob, name: string) => {
   return new File([blob], name, { type: blob.type });
+};
+
+export const formatBytes = (bytes: number, decimals = 2): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = [
+    "Bytes",
+    "KB",
+    "MB",
+    "GB",
+    "TB",
+  ];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };

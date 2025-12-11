@@ -88,7 +88,7 @@ const CSVUpload: React.FC = () => {
           const response = await fetch("/api/v1/upload", {
             method: "POST",
             body: formData,
-            credentials: "include" // Important: Include cookies in the request
+            credentials: "include", // Important: Include cookies in the request
           });
 
           const responseData = await response.json();
@@ -111,11 +111,9 @@ const CSVUpload: React.FC = () => {
 
         // Wait for all uploads to complete
         await Promise.all(uploadPromises);
+        parseDocsAndGo(uploadedFiles);
       }
-
-      parseDocsAndGo(uploadedFiles);
     } catch (error) {
-      console.error("Error parsing CSV files:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
 

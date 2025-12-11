@@ -14,7 +14,7 @@ import {
   flattenedIssues,
   formatValueToSlug,
 } from "./utils";
-import { getDevelopers, getMemberRole, getMembers } from "./teams";
+import { getDevelopers, getMemberRole, getMembers, getTestersNames } from "./teams";
 
 // Define a type for our CSV row data
 type CSVRowData = Record<string, string>;
@@ -641,6 +641,35 @@ export function calculateMembers(
           }
         }
       });
+    }
+
+    // Process author & author must be a tester
+    if (issue.author && issue.author.trim() !== "") {
+      const authorName = issue.author.trim();
+
+      if (authorName === "Dung Tran") {
+        return;
+      }
+
+      const testersNames = getTestersNames();
+      if (testersNames.includes(authorName)) {
+        if (!memberMap[authorName]) {
+          memberMap[authorName] = {
+            slug: formatValueToSlug(authorName),
+            name: authorName,
+            projects: [],
+            issues: [],
+            role: getMemberRole(authorName),
+          };
+        }
+        // Only add the issue if it's not already in the array
+        if (!memberMap[authorName].issues.includes(issue)) {
+          memberMap[authorName].issues.push(issue);
+          if (!memberMap[authorName].projects.includes(issue.projectName)) {
+            memberMap[authorName].projects.push(issue.projectName);
+          }
+        }
+      }
     }
   });
 
