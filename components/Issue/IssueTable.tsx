@@ -127,6 +127,22 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     size: 500,
   },
   {
+    accessorKey: "parentTaskSubject",
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        title={visibleColumns["parentTaskSubject"]}
+      />
+    ),
+    enableHiding: true,
+    cell: ({ row }) => (
+      <div className="truncate max-w-[500px]">
+        {row.original.parentTaskSubject}
+      </div>
+    ),
+    size: 500,
+  },
+  {
     accessorKey: "tracker",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["tracker"]} />
