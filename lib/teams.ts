@@ -34,7 +34,7 @@ export const TEAMS = [
       { name: "Thang Do", role: MEMBER_ROLE.DEV },
       { name: "Ly Nguyen", role: MEMBER_ROLE.DEV },
       { name: "Van Nguyen", role: MEMBER_ROLE.DEV },
-      { name: "Quang Lê", role: MEMBER_ROLE.DEV },
+      { name: "Quang Le", role: MEMBER_ROLE.DEV },
       { name: "Nhut Do", role: MEMBER_ROLE.DEV },
       { name: "HNghia Nguyen", role: MEMBER_ROLE.DEV },
       { name: "Minh Ha", role: MEMBER_ROLE.DEV },
