@@ -160,7 +160,7 @@ export function DocsTable({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 50,
+    pageSize: 100,
   });
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -287,7 +287,7 @@ export function DocsTable({
                 />
               </SelectTrigger>
               <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
+                {[10, 20, 30, 40, 50, 100].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>
