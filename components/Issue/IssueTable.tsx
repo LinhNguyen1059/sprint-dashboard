@@ -332,9 +332,13 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
 export function IssueTable({
   data,
   issues,
+  isTester,
+  memberName,
 }: {
   data: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
+  isTester?: boolean;
+  memberName?: string;
 }) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
@@ -455,12 +459,18 @@ export function IssueTable({
     table.getColumn("tracker")?.setFilterValue(["Bug"]);
     table.getColumn("issueCategories")?.setFilterValue("Post-Release Issue");
   };
+  const bugsFoundClick = () => {
+    table.resetColumnFilters();
+    table.getColumn("tracker")?.setFilterValue(["Bug"]);
+    table.getColumn("author")?.setFilterValue([memberName]);
+  };
 
   return (
     <>
       <IssueOverview
         data={data}
         issues={issues}
+        memberName={memberName}
         actions={{
           completionRateClick,
           inProgressClick,
@@ -468,6 +478,7 @@ export function IssueTable({
           criticalBugsClick,
           highBugsClick,
           postReleaseBugsClick,
+          bugsFoundClick,
         }}
       />
       <div className="w-full flex-col justify-start gap-6">

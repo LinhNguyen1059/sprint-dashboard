@@ -6,11 +6,13 @@ import { AlertCircle, Clock, Flag, Play, TrendingUp, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CombinedIssue, FeatureStatus, Story } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { isTester } from "@/lib/teams";
 
 export interface IssueOverviewData {
   criticalBugs: number;
   highBugs: number;
   postReleaseBugs: number;
+  bugFound: number;
 }
 
 export interface IssueOverviewActions {
@@ -20,15 +22,22 @@ export interface IssueOverviewActions {
   criticalBugsClick?: () => void;
   highBugsClick?: () => void;
   postReleaseBugsClick?: () => void;
+  bugsFoundClick?: () => void;
 }
 
 interface IssueOverviewProps {
   data: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
+  memberName?: string;
   actions: IssueOverviewActions;
 }
 
-export function IssueOverview({ data, issues, actions }: IssueOverviewProps) {
+export function IssueOverview({
+  data,
+  issues,
+  memberName,
+  actions,
+}: IssueOverviewProps) {
   // Calculate metrics for display
   const metrics = useMemo(() => {
     if (!data) return null;
@@ -61,8 +70,13 @@ export function IssueOverview({ data, issues, actions }: IssueOverviewProps) {
       criticalBugs: data.criticalBugs || 0,
       highBugs: data.highBugs || 0,
       postReleaseBugs: data.postReleaseBugs || 0,
+      bugFound: data.bugFound || 0,
     };
   }, [data, issues]);
+
+  const isTesterMember = useMemo(() => {
+    return isTester(memberName || "");
+  }, [memberName]);
 
   if (!data) return null;
 
@@ -174,6 +188,24 @@ export function IssueOverview({ data, issues, actions }: IssueOverviewProps) {
           <div className="text-2xl font-bold">{metrics?.postReleaseBugs}</div>
         </CardContent>
       </Card>
+
+      {isTesterMember && (
+        <Card
+          className={cn(
+            "shadow-none py-4 gap-4",
+            !!actions?.bugsFoundClick && "hover:cursor-pointer"
+          )}
+          onClick={actions?.bugsFoundClick}
+        >
+          <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-medium">Bugs Found</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="px-4">
+            <div className="text-2xl font-bold">{metrics?.bugFound}</div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

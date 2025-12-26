@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { CombinedIssue, Feature, FeatureStatus, Issue, Story } from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
-import { getDevelopers } from "./teams";
+import { getDevelopers, isTester } from "./teams";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -188,14 +188,20 @@ export const countBugsByPriority = ({
       return count;
     }
 
+    const isTesterMember = isTester(member);
+
     const categories = issue.issueCategories
       .split(",")
       .map((category) => category.trim())
       .filter(Boolean);
 
     if (
-      categories.some((category) => excludedIssueCategories.includes(category))
+      categories.some((category) => excludedIssueCategories.includes(category)) && !isTesterMember
     ) {
+      return count;
+    }
+
+    if (issue.status === "Rejected" && !isTesterMember) {
       return count;
     }
 

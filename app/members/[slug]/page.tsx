@@ -7,6 +7,7 @@ import { useDashboard } from "@/components/DashboardLayout";
 import { IssueTable } from "@/components/Issue";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { countBugsByPriority } from "@/lib/utils";
+import { MEMBER_ROLE } from "@/lib/teams";
 
 export default function FeatureDetail() {
   const params = useParams();
@@ -26,32 +27,41 @@ export default function FeatureDetail() {
       return {
         highBugs: 0,
         postReleaseBugs: 0,
-        criticalBugs: 0
+        criticalBugs: 0,
+        bugFound: 0,
       };
     }
 
     const highBugs = countBugsByPriority({
       member: memberData.name,
       issues: memberData.issues,
-      priorities: ["High"]
+      priorities: ["High"],
     });
     const postReleaseBugs = countBugsByPriority({
       member: memberData.name,
       issues: memberData.issues,
       priorities: ["Urgent", "Immediate"],
-      isPostRelease: true
+      isPostRelease: true,
     });
     const criticalBugs = countBugsByPriority({
       member: memberData.name,
       issues: memberData.issues,
-      priorities: ["Urgent", "Immediate"]
+      priorities: ["Urgent", "Immediate"],
     });
+    const bugFound = memberData.issues.filter(
+      (issue) => issue.tracker === "Bug" && issue.author === memberData.name
+    ).length;
 
     return {
       highBugs: highBugs || 0,
       postReleaseBugs: postReleaseBugs || 0,
-      criticalBugs: criticalBugs || 0
+      criticalBugs: criticalBugs || 0,
+      bugFound: bugFound || 0,
     };
+  }, [memberData]);
+
+  const isTesterMember = useMemo(() => {
+    return memberData?.role === MEMBER_ROLE.TESTER;
   }, [memberData]);
 
   usePageTitle(memberData ? memberData.name : "Member");
@@ -75,7 +85,12 @@ export default function FeatureDetail() {
         </div>
       </div>
 
-      <IssueTable data={bugsByPriority} issues={memberData?.issues} />
+      <IssueTable
+        data={bugsByPriority}
+        issues={memberData?.issues}
+        isTester={isTesterMember}
+        memberName={memberData?.name}
+      />
     </div>
   );
 }

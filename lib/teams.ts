@@ -114,3 +114,8 @@ export const getMemberRole = (memberName: string) => {
 export const getTestersNames = () => {
   return TEAMS.find((team) => team.name === "TESTER")?.members.map((member) => member.name) || [];
 }
+
+export const isTester = (memberName: string) => {
+  const testers = getTestersNames();
+  return testers.includes(memberName);
+}

@@ -198,7 +198,7 @@ const columns: ColumnDef<Member>[] = [
       const filteredIssues = getIssuesByProjects(table, row.original.issues);
 
       const timeSpent = filteredIssues.reduce((acc, issue) => {
-        acc += issue.totalSpentTime;
+        acc += issue.spentTime;
         return acc;
       }, 0);
 
