@@ -7,7 +7,6 @@ import { useDashboard } from "@/components/DashboardLayout";
 import { IssueTable } from "@/components/Issue";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { countBugsByPriority } from "@/lib/utils";
-import { MEMBER_ROLE } from "@/lib/teams";
 
 export default function FeatureDetail() {
   const params = useParams();
@@ -60,10 +59,6 @@ export default function FeatureDetail() {
     };
   }, [memberData]);
 
-  const isTesterMember = useMemo(() => {
-    return memberData?.role === MEMBER_ROLE.TESTER;
-  }, [memberData]);
-
   usePageTitle(memberData ? memberData.name : "Member");
 
   if (!memberData?.issues || memberData?.issues?.length === 0) {
@@ -88,7 +83,6 @@ export default function FeatureDetail() {
       <IssueTable
         data={bugsByPriority}
         issues={memberData?.issues}
-        isTester={isTesterMember}
         memberName={memberData?.name}
       />
     </div>

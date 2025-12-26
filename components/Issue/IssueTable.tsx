@@ -332,12 +332,10 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
 export function IssueTable({
   data,
   issues,
-  isTester,
   memberName,
 }: {
   data: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
-  isTester?: boolean;
   memberName?: string;
 }) {
   const [columnVisibility, setColumnVisibility] =

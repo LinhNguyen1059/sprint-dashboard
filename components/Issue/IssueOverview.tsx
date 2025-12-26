@@ -12,7 +12,7 @@ export interface IssueOverviewData {
   criticalBugs: number;
   highBugs: number;
   postReleaseBugs: number;
-  bugFound: number;
+  bugFound?: number;
 }
 
 export interface IssueOverviewActions {
