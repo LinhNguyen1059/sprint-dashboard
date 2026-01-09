@@ -386,7 +386,6 @@ export function IssueTable({
 
     return options;
   }, [issues]);
-  console.log({ trackerOptions });
   const statusOptions = React.useMemo(() => {
     const statuses = issues.map((story) => story.status);
     return Array.from(new Set(statuses)).filter(Boolean);
