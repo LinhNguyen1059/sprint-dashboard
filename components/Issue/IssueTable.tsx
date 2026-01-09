@@ -149,10 +149,24 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     ),
     filterFn: (row, id, value) => {
       if (!value || (Array.isArray(value) && value.length === 0)) return true;
+
+      const tracker = row.getValue(id);
+      const isWithoutSubtasks = row.original.isWithoutSubtasks;
+
       if (Array.isArray(value)) {
-        return value.includes(row.getValue(id));
+        return value.some((filterValue) => {
+          // Check for specific filter values
+          if (filterValue === "Story without subtasks") {
+            return tracker === "Story" && isWithoutSubtasks;
+          }
+          if (filterValue === "Suggestion without subtasks") {
+            return tracker === "Suggestion" && isWithoutSubtasks;
+          }
+          // Regular tracker match
+          return tracker === filterValue;
+        });
       }
-      return value === "" || row.getValue(id) === value;
+      return value === "" || tracker === value;
     },
   },
   {
@@ -360,8 +374,19 @@ export function IssueTable({
   // Get unique tracker values from the data
   const trackerOptions = React.useMemo(() => {
     const trackers = issues.map((story) => story.tracker);
-    return Array.from(new Set(trackers)).filter(Boolean);
+    const uniqueTrackers = Array.from(new Set(trackers)).filter(Boolean);
+
+    // Add special options for Story and Suggestion without subtasks
+    const hasStory = uniqueTrackers.includes("Story");
+    const hasSuggestion = uniqueTrackers.includes("Suggestion");
+
+    const options = [...uniqueTrackers];
+    if (hasStory) options.push("Story without subtasks");
+    if (hasSuggestion) options.push("Suggestion without subtasks");
+
+    return options;
   }, [issues]);
+  console.log({ trackerOptions });
   const statusOptions = React.useMemo(() => {
     const statuses = issues.map((story) => story.status);
     return Array.from(new Set(statuses)).filter(Boolean);

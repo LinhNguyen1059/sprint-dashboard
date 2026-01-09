@@ -21,6 +21,8 @@ export default function FeatureDetail() {
     return members.find((p) => p.slug === slug);
   }, [members, slug]);
 
+  console.log({ memberData });
+
   const bugsByPriority = useMemo(() => {
     if (!memberData?.issues) {
       return {
