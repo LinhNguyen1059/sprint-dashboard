@@ -46,13 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
-import {
-  CombinedIssue,
-  Feature,
-  FeatureStatus,
-  Member,
-  Story,
-} from "@/lib/types";
+import { CombinedIssue, FeatureStatus, Story } from "@/lib/types";
 import {
   bugTrackerUrl,
   cn,
@@ -162,7 +156,7 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
           if (filterValue === "Suggestion without subtasks") {
             return tracker === "Suggestion" && isWithoutSubtasks;
           }
-          // Regular tracker match
+
           return tracker === filterValue;
         });
       }
@@ -516,6 +510,7 @@ export function IssueTable({
                   ?.setFilterValue(values.length > 0 ? values : undefined);
               }}
               placeholder="All Trackers"
+              popoverWidth="w-56"
             />
 
             {/* Status Multi-Select Filter */}
