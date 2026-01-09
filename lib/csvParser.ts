@@ -123,7 +123,20 @@ export function parseCSVFileObject(file: File): Promise<CombinedIssue[]> {
               status: row["Status"],
             }),
             triggeredBy: row["Triggered By"],
+            isWithoutSubtasks: true, // Default to true, will be calculated later
           };
+        });
+
+        // Calculate isWithoutSubtasks: an issue has no subtasks if no other issue has it as parentTask
+        const issueWithSubtasks = new Set<number>();
+        issues.forEach((issue) => {
+          if (issue.parentTask) {
+            issueWithSubtasks.add(issue.parentTask);
+          }
+        });
+
+        issues.forEach((issue) => {
+          issue.isWithoutSubtasks = !issueWithSubtasks.has(issue.id);
         });
 
         resolve(issues);

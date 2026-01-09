@@ -16,6 +16,7 @@ interface MultiSelectFilterProps {
   selectedValues: string[];
   onSelectionChange: (values: string[]) => void;
   placeholder?: string;
+  popoverWidth?: string;
 }
 
 export function MultiSelectFilter({
@@ -23,6 +24,7 @@ export function MultiSelectFilter({
   selectedValues,
   onSelectionChange,
   placeholder = "Select options",
+  popoverWidth,
 }: MultiSelectFilterProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -53,7 +55,10 @@ export function MultiSelectFilter({
           <ChevronDown />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-48" align="start">
+      <PopoverContent
+        className={`p-0 ${popoverWidth ? popoverWidth : "w-48"}`}
+        align="start"
+      >
         <div className="max-h-60 overflow-auto">
           {options.map((option) => {
             const isSelected = selectedValues.includes(option);

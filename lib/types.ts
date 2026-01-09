@@ -36,6 +36,7 @@ export interface Issue {
   private: boolean;
   storyPoints: number;
   triggeredBy: string;
+  isWithoutSubtasks: boolean;
 }
 
 export interface CombinedIssue extends Issue {
