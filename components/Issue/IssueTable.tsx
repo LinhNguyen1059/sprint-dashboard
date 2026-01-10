@@ -493,12 +493,12 @@ export function IssueTable({
   };
   const supportedClick = () => {
     table.resetColumnFilters();
-    table.getColumn("tracker")?.setFilterValue(["Bug"]);
     // Filter for bugs where triggeredBy is not the current member
     if (memberName) {
-      const otherTriggeredBy = triggeredByOptions.filter(
-        (triggered) => triggered !== memberName
-      );
+      const otherTriggeredBy = triggeredByOptions.filter((triggered) => {
+        const triggeredNames = triggered.split(",").map((name) => name.trim());
+        return !triggeredNames.includes(memberName);
+      });
       table.getColumn("triggeredBy")?.setFilterValue(otherTriggeredBy);
     }
   };

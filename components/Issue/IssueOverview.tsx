@@ -89,6 +89,10 @@ export function IssueOverview({
     return isTester(memberName || "");
   }, [memberName]);
 
+  const isMemberDetail = useMemo(() => {
+    return !!memberName;
+  }, [memberName]);
+
   if (!data) return null;
 
   return (
@@ -217,21 +221,23 @@ export function IssueOverview({
           </CardContent>
         </Card>
       )}
-      <Card
-        className={cn(
-          "shadow-none py-4 gap-4",
-          !!actions?.supportedClick && "hover:cursor-pointer"
-        )}
-        onClick={actions?.supportedClick}
-      >
-        <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Supported</CardTitle>
-          <HandFist className="h-4 w-4 text-blue-600" />
-        </CardHeader>
-        <CardContent className="px-4">
-          <div className="text-2xl font-bold">{metrics?.supported}</div>
-        </CardContent>
-      </Card>
+      {isMemberDetail && (
+        <Card
+          className={cn(
+            "shadow-none py-4 gap-4",
+            !!actions?.supportedClick && "hover:cursor-pointer"
+          )}
+          onClick={actions?.supportedClick}
+        >
+          <CardHeader className="pb-0 px-4 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-medium">Supported</CardTitle>
+            <HandFist className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent className="px-4">
+            <div className="text-2xl font-bold">{metrics?.supported}</div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

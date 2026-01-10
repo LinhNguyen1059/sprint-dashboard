@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useDashboard } from "@/components/DashboardLayout";
 import { IssueTable } from "@/components/Issue";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { countBugsByPriority } from "@/lib/utils";
+import { countBugsByPriority, countBugsSupportedByMember } from "@/lib/utils";
 
 export default function FeatureDetail() {
   const params = useParams();
@@ -50,12 +50,10 @@ export default function FeatureDetail() {
     const bugFound = memberData.issues.filter(
       (issue) => issue.tracker === "Bug" && issue.author === memberData.name
     ).length;
-    const supported = memberData.issues.filter(
-      (issue) =>
-        issue.tracker === "Bug" &&
-        issue.triggeredBy &&
-        !issue.triggeredBy.includes(memberData.name)
-    ).length;
+    const supported = countBugsSupportedByMember({
+      member: memberData.name,
+      issues: memberData.issues,
+    });
 
     return {
       highBugs: highBugs || 0,
