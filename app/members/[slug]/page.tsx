@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useDashboard } from "@/components/DashboardLayout";
 import { IssueTable } from "@/components/Issue";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { countBugsByPriority } from "@/lib/utils";
+import { countBugsByPriority, countBugsSupportedByMember } from "@/lib/utils";
 
 export default function FeatureDetail() {
   const params = useParams();
@@ -28,9 +28,9 @@ export default function FeatureDetail() {
         postReleaseBugs: 0,
         criticalBugs: 0,
         bugFound: 0,
+        supported: 0,
       };
     }
-
     const highBugs = countBugsByPriority({
       member: memberData.name,
       issues: memberData.issues,
@@ -50,12 +50,17 @@ export default function FeatureDetail() {
     const bugFound = memberData.issues.filter(
       (issue) => issue.tracker === "Bug" && issue.author === memberData.name
     ).length;
+    const supported = countBugsSupportedByMember({
+      member: memberData.name,
+      issues: memberData.issues,
+    });
 
     return {
       highBugs: highBugs || 0,
       postReleaseBugs: postReleaseBugs || 0,
       criticalBugs: criticalBugs || 0,
       bugFound: bugFound || 0,
+      supported: supported || 0,
     };
   }, [memberData]);
 

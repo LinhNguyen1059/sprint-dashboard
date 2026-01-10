@@ -273,6 +273,13 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["triggeredBy"]} />
     ),
+    filterFn: (row, id, value) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return true;
+      if (Array.isArray(value)) {
+        return value.includes(row.getValue(id));
+      }
+      return value === "" || row.getValue(id) === value;
+    },
   },
   {
     accessorKey: "percentDone",
@@ -396,6 +403,10 @@ export function IssueTable({
       .filter(Boolean);
     return Array.from(new Set(individualCategories));
   }, [issues]);
+  const triggeredByOptions = React.useMemo(() => {
+    const triggeredByValues = issues.map((story) => story.triggeredBy);
+    return Array.from(new Set(triggeredByValues)).filter(Boolean);
+  }, [issues]);
 
   const table = useReactTable({
     data: issues,
@@ -480,6 +491,17 @@ export function IssueTable({
     table.getColumn("tracker")?.setFilterValue(["Bug"]);
     table.getColumn("author")?.setFilterValue([memberName]);
   };
+  const supportedClick = () => {
+    table.resetColumnFilters();
+    // Filter for bugs where triggeredBy is not the current member
+    if (memberName) {
+      const otherTriggeredBy = triggeredByOptions.filter((triggered) => {
+        const triggeredNames = triggered.split(",").map((name) => name.trim());
+        return !triggeredNames.includes(memberName);
+      });
+      table.getColumn("triggeredBy")?.setFilterValue(otherTriggeredBy);
+    }
+  };
 
   return (
     <>
@@ -495,6 +517,7 @@ export function IssueTable({
           highBugsClick,
           postReleaseBugsClick,
           bugsFoundClick,
+          supportedClick,
         }}
       />
       <div className="w-full flex-col justify-start gap-6">
