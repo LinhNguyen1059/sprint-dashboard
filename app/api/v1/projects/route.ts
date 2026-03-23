@@ -1,27 +1,19 @@
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from "next/server";
+import { getApiKey, redmineFetch } from "@/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const apiKey = (await cookieStore).get('access_token')?.value;
+    const result = await getApiKey();
+    if (result.error) return result.error;
+    const { apiKey } = result;
 
-    if (!apiKey) {
-      return NextResponse.json({ valid: false, error: "Missing API key" }, { status: 400 });
-    }
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/projects.json`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Redmine-API-Key": apiKey,
-      },
-    });
+    const response = await redmineFetch("/projects.json", apiKey);
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Error fetching projects:", errorData);
-      return NextResponse.json({ valid: false, error: "Failed to fetch projects" }, { status: 500 });
+      return NextResponse.json(
+        { valid: false, error: "Failed to fetch projects" },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();

@@ -226,3 +226,16 @@ export interface ApiProjectResponse {
   created_on: string;
   updated_on: string;
 }
+
+export interface Filter {
+  projectIds: number[];
+  sprintIds: number[] | undefined;
+  startDate: string | undefined;
+  endDate: string | undefined;
+}
+
+export interface Sprint {
+  id: number;
+  name: string;
+  status: string;
+}

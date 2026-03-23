@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { LoginForm } from "@/components/LoginForm";
 import { Member } from "@/components/Member/Member";
 import { useAppStore } from "@/stores/appStore";
+import { handleUnauthorized } from "@/lib/api-client";
 
 export default function Home() {
   const { authenticated, setStates } = useAppStore();
@@ -17,6 +18,9 @@ export default function Home() {
         cookie.trim().startsWith("access_token="),
       );
       setStates({ authenticated: !!accessTokenCookie });
+      if (!accessTokenCookie) {
+        handleUnauthorized();
+      }
     };
 
     checkAuth();

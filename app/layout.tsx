@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { Toaster } from "@/components/ui/sonner";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,13 +28,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NextTopLoader />
-        <DashboardLayout>{children}</DashboardLayout>
-        <Toaster />
+        <ThemeProvider>
+          <NextTopLoader />
+          <DashboardLayout>{children}</DashboardLayout>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

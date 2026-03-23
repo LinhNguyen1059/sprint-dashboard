@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/input-group";
 
 import { useAppStore } from "@/stores/appStore";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function LoginForm() {
   const [apiKey, setApiKey] = useState("");
@@ -40,6 +41,8 @@ export function LoginForm() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
+    if (isLoading || !apiKey) return;
+
     e.preventDefault();
     setIsLoading(true);
 
@@ -70,12 +73,15 @@ export function LoginForm() {
   return (
     <div className="max-w-md mx-auto">
       <div className="grid py-10 px-5 grid-rows-1">
-        <Target className="mx-auto h-12 w-12 text-gray-400" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+        <div className="absolute top-2 right-2">
+          <ThemeToggle />
+        </div>
+        <Target className="mx-auto h-12 w-12" />
+        <h2 className="text-xl font-semibold mb-6 text-center">
           Redmine Dashboard
         </h2>
 
-        <div className="flex flex-col gap-4">
+        <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <Field className="gap-2">
             <FieldLabel htmlFor="api-key">API Key</FieldLabel>
             <InputGroup>
@@ -85,6 +91,7 @@ export function LoginForm() {
                 placeholder="Enter API Key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+                onSubmit={handleLogin}
               />
               <InputGroupAddon align="inline-end">
                 <InputGroupButton
@@ -104,14 +111,10 @@ export function LoginForm() {
               How to get your Redmine API key?
             </FieldDescription>
           </Field>
-          <Button
-            type="button"
-            disabled={isLoading || !apiKey}
-            onClick={handleLogin}
-          >
+          <Button type="submit" disabled={isLoading || !apiKey}>
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
-        </div>
+        </form>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="sm:max-w-[425px]">

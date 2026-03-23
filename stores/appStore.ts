@@ -1,26 +1,27 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { ApiProjectResponse } from "@/lib/types";
-
 interface AppState {
   authenticated: boolean;
-  projects: ApiProjectResponse[];
-  setStates: (partial: Partial<Omit<AppState, "setStates">>) => void;
+  setStates: (partial: Partial<Omit<AppState, "setStates" | "reset">>) => void;
+  reset: () => void;
 }
+
+const initialAppState = {
+  authenticated: false,
+};
 
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      authenticated: false,
-      projects: [],
+      ...initialAppState,
       setStates: (partial) => set(partial),
+      reset: () => set(initialAppState),
     }),
     {
       name: "app-store",
       partialize: (state) => ({
         authenticated: state.authenticated,
-        projects: state.projects,
       }),
     },
   ),

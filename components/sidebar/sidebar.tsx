@@ -14,11 +14,15 @@ import {
   SidebarProvider,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { SiteHeader } from "./SiteHeader";
-import { SidebarProjects } from "./SidebarProjects";
-import { SidebarDateRange } from "./SidebarDateRange";
 
-function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
+import { SiteHeader } from "./sidebar-header";
+import { SidebarProject } from "./sidebar-project";
+import { SidebarDateRange } from "./sidebar-date-range";
+import { SidebarSprint } from "./sidebar-sprint";
+import { SidebarLogic } from "./sidebar.logic";
+import { SidebarApply } from "./sidebar-apply";
+
+function AppSidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
   return (
     <SidebarUI collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -31,16 +35,19 @@ function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="custom-scrollbar">
-        <SidebarProjects />
+      <SidebarContent className="no-scrollbar">
+        <SidebarProject />
+        <SidebarSprint />
         <SidebarDateRange />
       </SidebarContent>
-      <SidebarFooter></SidebarFooter>
+      <SidebarFooter>
+        <SidebarApply />
+      </SidebarFooter>
     </SidebarUI>
   );
 }
 
-export function AppSidebar({ children }: { children: React.ReactNode }) {
+export function Sidebar({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider
       style={
@@ -50,7 +57,8 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <Sidebar variant="sidebar" />
+      <SidebarLogic />
+      <AppSidebar variant="sidebar" />
       <SidebarInset>
         <SiteHeader />
         <div className="@container/main flex-1">{children}</div>

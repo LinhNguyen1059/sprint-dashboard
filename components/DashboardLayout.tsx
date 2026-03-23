@@ -3,9 +3,10 @@
 import React from "react";
 
 import { DashboardLayoutProps } from "@/lib/types";
-import { AppSidebar } from "./Sidebar/AppSidebar";
 import { useMounted } from "@/hooks/use-mount";
 import { useAppStore } from "@/stores/appStore";
+
+import { Sidebar } from "./sidebar/sidebar";
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { authenticated } = useAppStore();
@@ -18,7 +19,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   return (
     <main className="mx-auto">
-      {authenticated ? <AppSidebar>{children}</AppSidebar> : children}
+      {authenticated ? <Sidebar>{children}</Sidebar> : children}
     </main>
   );
 };

@@ -206,5 +206,6 @@
   }
   .no-scrollbar {
     @apply [&::-webkit-scrollbar]:hidden;
+    scrollbar-width: none;
   }
 }
