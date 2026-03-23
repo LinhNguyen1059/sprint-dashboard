@@ -3,25 +3,26 @@ import { Geist, Geist_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
+import { Toaster } from "@/components/ui/sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"]
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  subsets: ["latin"]
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "OKR Dashboard",
-  description: "OKR Dashboard"
+  title: "Redmine Dashboard",
+  description: "Redmine Dashboard",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
@@ -32,6 +33,7 @@ export default function RootLayout({
       >
         <NextTopLoader />
         <DashboardLayout>{children}</DashboardLayout>
+        <Toaster />
       </body>
     </html>
   );

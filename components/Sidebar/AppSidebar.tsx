@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { LayoutDashboardIcon } from "lucide-react";
 
 import {
@@ -11,22 +10,15 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarProvider,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { cn, isRouteActive } from "@/lib/utils";
-import { routes } from "@/lib/routes";
-import { NavProjects } from "./NavProjects";
 import { SiteHeader } from "./SiteHeader";
-import { NavSolutions } from "./NavSolutions";
+import { SidebarProjects } from "./SidebarProjects";
+import { SidebarDateRange } from "./SidebarDateRange";
 
 function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
-  const path = usePathname();
-
   return (
     <SidebarUI collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -40,32 +32,8 @@ function Sidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="custom-scrollbar">
-        <SidebarGroup>
-          <SidebarGroupContent className="flex flex-col gap-2">
-            <SidebarMenu>
-              {routes.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    className={cn(
-                      isRouteActive(item.url, path)
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-                        : ""
-                    )}
-                    asChild
-                  >
-                    <Link href={item.url}>
-                      {item.icon && <item.icon />}
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <NavProjects />
-        <NavSolutions />
+        <SidebarProjects />
+        <SidebarDateRange />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </SidebarUI>

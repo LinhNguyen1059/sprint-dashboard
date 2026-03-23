@@ -7,101 +7,100 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { routes } from "@/lib/routes";
 import { cn, isRouteActive } from "@/lib/utils";
-import { useDashboard } from "../DashboardLayout";
 
 export function SiteHeader() {
-  const path = usePathname();
-  const params = useParams();
-  const { slug, feature } = params;
+  // const path = usePathname();
+  // const params = useParams();
+  // const { slug, feature } = params;
 
-  const { projects, solutions, members } = useDashboard();
+  // const { projects, solutions, members } = useDashboard();
 
-  const isProjectRoute = isRouteActive("/projects", path);
-  const isSolutionRoute = isRouteActive("/solutions", path);
-  const isMemberRoute = isRouteActive("/members", path);
+  // const isProjectRoute = isRouteActive("/projects", path);
+  // const isSolutionRoute = isRouteActive("/solutions", path);
+  // const isMemberRoute = isRouteActive("/members", path);
 
-  const route = useMemo(() => {
-    return routes.find((route) => {
-      if (route.url === path) return true;
+  // const route = useMemo(() => {
+  //   return routes.find((route) => {
+  //     if (route.url === path) return true;
 
-      if (path.startsWith(route.url)) {
-        const nextChar = path[route.url.length];
-        return nextChar === "/" || nextChar === undefined;
-      }
+  //     if (path.startsWith(route.url)) {
+  //       const nextChar = path[route.url.length];
+  //       return nextChar === "/" || nextChar === undefined;
+  //     }
 
-      return false;
-    });
-  }, [path]);
+  //     return false;
+  //   });
+  // }, [path]);
 
-  const slugName = useMemo(() => {
-    if (isProjectRoute) {
-      if (projects.length === 0 || !slug) {
-        return null;
-      }
+  // const slugName = useMemo(() => {
+  //   if (isProjectRoute) {
+  //     if (projects.length === 0 || !slug) {
+  //       return null;
+  //     }
 
-      return projects.find((p) => p.slug === slug)?.name;
-    }
+  //     return projects.find((p) => p.slug === slug)?.name;
+  //   }
 
-    if (isSolutionRoute) {
-      if (solutions.length === 0 || !slug) {
-        return null;
-      }
+  //   if (isSolutionRoute) {
+  //     if (solutions.length === 0 || !slug) {
+  //       return null;
+  //     }
 
-      return solutions.find((p) => p.slug === slug)?.name;
-    }
+  //     return solutions.find((p) => p.slug === slug)?.name;
+  //   }
 
-    if (isMemberRoute) {
-      if (members.length === 0 || !slug) {
-        return null;
-      }
+  //   if (isMemberRoute) {
+  //     if (members.length === 0 || !slug) {
+  //       return null;
+  //     }
 
-      return members.find((p) => p.slug === slug)?.name;
-    }
+  //     return members.find((p) => p.slug === slug)?.name;
+  //   }
 
-    return null;
-  }, [
-    projects,
-    solutions,
-    slug,
-    isProjectRoute,
-    isSolutionRoute,
-    members,
-    isMemberRoute,
-  ]);
+  //   return null;
+  // }, [
+  //   projects,
+  //   solutions,
+  //   slug,
+  //   isProjectRoute,
+  //   isSolutionRoute,
+  //   members,
+  //   isMemberRoute,
+  // ]);
 
-  const featureName = useMemo(() => {
-    if (isProjectRoute) {
-      if (projects.length === 0 || !feature || !slug) {
-        return null;
-      }
+  // const featureName = useMemo(() => {
+  //   if (isProjectRoute) {
+  //     if (projects.length === 0 || !feature || !slug) {
+  //       return null;
+  //     }
 
-      const project = projects.find((p) => p.slug === slug);
+  //     const project = projects.find((p) => p.slug === slug);
 
-      return (
-        project?.features.find((f) => f.slug === feature)?.subject || feature
-      );
-    }
+  //     return (
+  //       project?.features.find((f) => f.slug === feature)?.subject || feature
+  //     );
+  //   }
 
-    if (isSolutionRoute) {
-      if (solutions.length === 0 || !feature || !slug) {
-        return null;
-      }
+  //   if (isSolutionRoute) {
+  //     if (solutions.length === 0 || !feature || !slug) {
+  //       return null;
+  //     }
 
-      const solution = solutions.find((p) => p.slug === slug);
+  //     const solution = solutions.find((p) => p.slug === slug);
 
-      return (
-        solution?.features.find((f) => f.slug === feature)?.subject || feature
-      );
-    }
+  //     return (
+  //       solution?.features.find((f) => f.slug === feature)?.subject || feature
+  //     );
+  //   }
 
-    return null;
-  }, [projects, solutions, feature, slug, isProjectRoute, isSolutionRoute]);
+  //   return null;
+  // }, [projects, solutions, feature, slug, isProjectRoute, isSolutionRoute]);
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) sticky top-0 z-20 bg-background">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1" />
-        <Separator
+        {/* <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
@@ -114,8 +113,8 @@ export function SiteHeader() {
           >
             {route?.title || "Dashboard"}
           </h1>
-        </Link>
-        {slugName && (
+        </Link> */}
+        {/* {slugName && (
           <>
             <ChevronRight size={14} />
             <Link href={`${route?.url}/${slug}`}>
@@ -135,7 +134,7 @@ export function SiteHeader() {
             <ChevronRight size={14} />
             <h1 className="text-base font-medium">{featureName}</h1>
           </>
-        )}
+        )} */}
       </div>
     </header>
   );

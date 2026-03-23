@@ -94,32 +94,32 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --chart-6: oklch(0.55 0.15 300.0);
-  --chart-7: oklch(0.70 0.20 150.0);
-  --chart-8: oklch(0.85 0.10 20.0);
-  --chart-9: oklch(0.45 0.25 270.0);
-  --chart-10: oklch(0.65 0.18 120.0);
+  --chart-6: oklch(0.55 0.15 300);
+  --chart-7: oklch(0.7 0.2 150);
+  --chart-8: oklch(0.85 0.1 20);
+  --chart-9: oklch(0.45 0.25 270);
+  --chart-10: oklch(0.65 0.18 120);
   /* Additional 20 colors */
-  --chart-11: oklch(0.75 0.25 30.0);
-  --chart-12: oklch(0.50 0.20 210.0);
-  --chart-13: oklch(0.80 0.15 100.0);
-  --chart-14: oklch(0.40 0.18 300.0);
-  --chart-15: oklch(0.70 0.10 60.0);
-  --chart-16: oklch(0.60 0.22 240.0);
-  --chart-17: oklch(0.55 0.15 180.0);
-  --chart-18: oklch(0.85 0.12 330.0);
-  --chart-19: oklch(0.45 0.20 150.0);
-  --chart-20: oklch(0.75 0.18 270.0);
-  --chart-21: oklch(0.65 0.12 90.0);
-  --chart-22: oklch(0.50 0.25 300.0);
-  --chart-23: oklch(0.80 0.10 150.0);
-  --chart-24: oklch(0.40 0.15 60.0);
-  --chart-25: oklch(0.70 0.22 210.0);
-  --chart-26: oklch(0.55 0.18 330.0);
-  --chart-27: oklch(0.85 0.15 120.0);
-  --chart-28: oklch(0.45 0.12 240.0);
-  --chart-29: oklch(0.75 0.20 180.0);
-  --chart-30: oklch(0.60 0.10 30.0);
+  --chart-11: oklch(0.75 0.25 30);
+  --chart-12: oklch(0.5 0.2 210);
+  --chart-13: oklch(0.8 0.15 100);
+  --chart-14: oklch(0.4 0.18 300);
+  --chart-15: oklch(0.7 0.1 60);
+  --chart-16: oklch(0.6 0.22 240);
+  --chart-17: oklch(0.55 0.15 180);
+  --chart-18: oklch(0.85 0.12 330);
+  --chart-19: oklch(0.45 0.2 150);
+  --chart-20: oklch(0.75 0.18 270);
+  --chart-21: oklch(0.65 0.12 90);
+  --chart-22: oklch(0.5 0.25 300);
+  --chart-23: oklch(0.8 0.1 150);
+  --chart-24: oklch(0.4 0.15 60);
+  --chart-25: oklch(0.7 0.22 210);
+  --chart-26: oklch(0.55 0.18 330);
+  --chart-27: oklch(0.85 0.15 120);
+  --chart-28: oklch(0.45 0.12 240);
+  --chart-29: oklch(0.75 0.2 180);
+  --chart-30: oklch(0.6 0.1 30);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -155,32 +155,32 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --chart-6: oklch(0.55 0.22 330.0);
-  --chart-7: oklch(0.60 0.18 180.0);
-  --chart-8: oklch(0.75 0.15 40.0);
-  --chart-9: oklch(0.40 0.20 280.0);
-  --chart-10: oklch(0.55 0.25 100.0);
+  --chart-6: oklch(0.55 0.22 330);
+  --chart-7: oklch(0.6 0.18 180);
+  --chart-8: oklch(0.75 0.15 40);
+  --chart-9: oklch(0.4 0.2 280);
+  --chart-10: oklch(0.55 0.25 100);
   /* Additional 20 colors */
-  --chart-11: oklch(0.65 0.20 30.0);
-  --chart-12: oklch(0.50 0.18 210.0);
-  --chart-13: oklch(0.75 0.15 100.0);
-  --chart-14: oklch(0.45 0.22 300.0);
-  --chart-15: oklch(0.65 0.12 60.0);
-  --chart-16: oklch(0.55 0.25 240.0);
-  --chart-17: oklch(0.60 0.15 180.0);
-  --chart-18: oklch(0.75 0.12 330.0);
-  --chart-19: oklch(0.40 0.18 150.0);
-  --chart-20: oklch(0.70 0.20 270.0);
-  --chart-21: oklch(0.55 0.15 90.0);
-  --chart-22: oklch(0.65 0.22 300.0);
-  --chart-23: oklch(0.75 0.10 150.0);
-  --chart-24: oklch(0.45 0.15 60.0);
-  --chart-25: oklch(0.60 0.18 210.0);
-  --chart-26: oklch(0.50 0.20 330.0);
-  --chart-27: oklch(0.80 0.15 120.0);
-  --chart-28: oklch(0.40 0.12 240.0);
-  --chart-29: oklch(0.70 0.18 180.0);
-  --chart-30: oklch(0.55 0.10 30.0);
+  --chart-11: oklch(0.65 0.2 30);
+  --chart-12: oklch(0.5 0.18 210);
+  --chart-13: oklch(0.75 0.15 100);
+  --chart-14: oklch(0.45 0.22 300);
+  --chart-15: oklch(0.65 0.12 60);
+  --chart-16: oklch(0.55 0.25 240);
+  --chart-17: oklch(0.6 0.15 180);
+  --chart-18: oklch(0.75 0.12 330);
+  --chart-19: oklch(0.4 0.18 150);
+  --chart-20: oklch(0.7 0.2 270);
+  --chart-21: oklch(0.55 0.15 90);
+  --chart-22: oklch(0.65 0.22 300);
+  --chart-23: oklch(0.75 0.1 150);
+  --chart-24: oklch(0.45 0.15 60);
+  --chart-25: oklch(0.6 0.18 210);
+  --chart-26: oklch(0.5 0.2 330);
+  --chart-27: oklch(0.8 0.15 120);
+  --chart-28: oklch(0.4 0.12 240);
+  --chart-29: oklch(0.7 0.18 180);
+  --chart-30: oklch(0.55 0.1 30);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -202,6 +202,9 @@
 
 @layer utilities {
   .custom-scrollbar {
-    @apply [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-track]:bg-neutral-700 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
+    @apply [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-track]:bg-neutral-700 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500;
+  }
+  .no-scrollbar {
+    @apply [&::-webkit-scrollbar]:hidden;
   }
 }
