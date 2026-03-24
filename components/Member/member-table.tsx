@@ -46,30 +46,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CombinedIssue, FeatureStatus, Member } from "@/lib/types";
-import {
-  countBugsByPriority,
-  cn,
-  countBugsSupportedByMember,
-} from "@/lib/utils";
-import { Label } from "../ui/label";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
-import { Badge } from "../ui/badge";
-import { MultiSelectFilter } from "../MultiSelectFilter";
-import { Separator } from "../ui/separator";
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+
+import { CombinedIssue, FeatureStatus, Member } from "@/lib/types";
+import {
+  countBugsByPriority,
+  cn,
+  countBugsSupportedByMember,
+} from "@/lib/utils";
 import { MEMBER_ROLE } from "@/lib/teams";
+import { useDashboardStore } from "@/stores/dashboardStore";
+
+import { MultiSelectFilter } from "../MultiSelectFilter";
 
 const visibleColumns = {
   name: "Member name",
   timeSpent: "Time spent",
   criticalBugs: "Critical bugs",
   highBugs: "High bugs",
+  supported: "Supported",
   normalBugs: "Normal bugs",
   postReleaseBugs: "Post-Release bugs",
   projects: "Projects",
@@ -80,13 +84,13 @@ const getIssuesByProjects = (table: Table<Member>, issues: CombinedIssue[]) => {
   const selectedProjects = Array.isArray(projectFilterValue)
     ? projectFilterValue
     : projectFilterValue
-    ? [projectFilterValue]
-    : [];
+      ? [projectFilterValue]
+      : [];
 
   let filteredIssues = issues;
   if (selectedProjects.length > 0) {
     filteredIssues = issues.filter((issue) =>
-      selectedProjects.includes(issue.projectName)
+      selectedProjects.includes(issue.projectName),
     );
   }
 
@@ -129,7 +133,7 @@ const columns: ColumnDef<Member>[] = [
     cell: ({ row }) => (
       <div className="min-w-80">
         <Link
-          href={`/members/${row.original.slug}`}
+          href={`/member/${row.original.slug}`}
           className="hover:underline font-medium"
         >
           {row.original.name}
@@ -175,7 +179,7 @@ const columns: ColumnDef<Member>[] = [
       const ontimeCount = filteredIssues.filter(
         (issue) =>
           (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
-          issue.dueStatus === FeatureStatus.ONTIME
+          issue.dueStatus === FeatureStatus.ONTIME,
       ).length;
       const totalCount = filteredIssues.length;
       const percent =
@@ -304,7 +308,7 @@ const columns: ColumnDef<Member>[] = [
 
       if (Array.isArray(value)) {
         return value.some((selectedProject) =>
-          memberProjects.includes(selectedProject)
+          memberProjects.includes(selectedProject),
         );
       }
 
@@ -313,13 +317,15 @@ const columns: ColumnDef<Member>[] = [
   },
 ];
 
-export function MembersTable({ data: initialData }: { data: Member[] }) {
+export function MemberTable() {
+  const { members } = useDashboardStore();
+
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
       projects: false,
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
@@ -328,7 +334,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
   });
 
   const table = useReactTable({
-    data: initialData,
+    data: members,
     columns,
     state: {
       sorting,
@@ -351,14 +357,14 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
   });
 
   const roleOptions = React.useMemo(() => {
-    const roles = initialData.map((mem) => mem.role);
+    const roles = members.map((mem) => mem.role);
     return Array.from(new Set(roles)).filter(Boolean);
-  }, [initialData]);
+  }, [members]);
 
   const projectOptions = React.useMemo(() => {
-    const allProjects = initialData.flatMap((mem) => mem.projects);
+    const allProjects = members.flatMap((mem) => mem.projects);
     return Array.from(new Set(allProjects)).filter(Boolean);
-  }, [initialData]);
+  }, [members]);
 
   // Get the current name filter value
   const nameFilterValue = table.getColumn("name")?.getFilterValue() ?? "";
@@ -442,7 +448,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
                 .filter(
                   (column) =>
                     typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
+                    column.getCanHide(),
                 )
                 .map((column) => {
                   return (
@@ -474,7 +480,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -495,7 +501,7 @@ export function MembersTable({ data: initialData }: { data: Member[] }) {
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}

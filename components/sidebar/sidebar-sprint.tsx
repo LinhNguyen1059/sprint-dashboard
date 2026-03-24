@@ -23,7 +23,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useDashboardStore } from "@/stores/dashboardStore";
+import { useDashboardStore, useStoreHydrated } from "@/stores/dashboardStore";
 import { apiFetch } from "@/lib/api-client";
 import { Sprint } from "@/lib/types";
 
@@ -50,6 +50,7 @@ function LoadingSkeleton() {
 }
 
 function SprintList({ searchText }: { searchText: string }) {
+  const hydrated = useStoreHydrated();
   const { sprints, filter, isSprintLoading, toggleSprintInFilter } =
     useDashboardStore();
 
@@ -59,7 +60,7 @@ function SprintList({ searchText }: { searchText: string }) {
       )
     : sprints;
 
-  if (!filtered.length || isSprintLoading) return null;
+  if (!filtered.length || isSprintLoading || !hydrated) return null;
 
   const listHeight = Math.min(filtered.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
 
@@ -113,16 +114,21 @@ export function SidebarSprint() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchSprints = async () => {
       setStates({ isSprintLoading: true });
       try {
         const { data } = await apiFetch<{ sprints: Sprint[] }>(
           `/api/v1/sprints?project_id=${singleProjectId}`,
+          { signal: controller.signal },
         );
         if (data) {
           setStates({ sprints: data.sprints });
         }
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         console.error("Error fetching sprints:", error);
       } finally {
         setStates({ isSprintLoading: false });
@@ -130,6 +136,8 @@ export function SidebarSprint() {
     };
 
     fetchSprints();
+
+    return () => controller.abort();
   }, [singleProjectId]);
 
   useEffect(() => {

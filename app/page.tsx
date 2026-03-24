@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 
 import { LoginForm } from "@/components/LoginForm";
-import { Member } from "@/components/Member/Member";
+import { Member } from "@/components/member";
 import { useAppStore } from "@/stores/appStore";
 import { handleUnauthorized } from "@/lib/api-client";
 

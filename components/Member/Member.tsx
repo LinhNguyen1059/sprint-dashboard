@@ -1,4 +1,4 @@
-import { MembersTable } from "./MembersTable";
+import { MemberTable } from "./member-table";
 
 export function Member() {
   return (
@@ -8,7 +8,7 @@ export function Member() {
         <p className="text-muted-foreground">List of your team members</p>
       </div>
 
-      <MembersTable data={[]} />
+      <MemberTable />
     </div>
   );
 }

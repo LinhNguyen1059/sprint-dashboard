@@ -1,33 +1,27 @@
 "use client";
 
-import { useDashboardStore } from "@/stores/dashboardStore";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+
+import { useDashboardStore } from "@/stores/dashboardStore";
 
 export function SidebarApply() {
-  const { filter, resetFilter } = useDashboardStore();
+  const {
+    isLoading,
+    resetFilter,
+    getReportData,
+    checkIsAnyFilterApplied,
+    checkIsAllFilterApplied,
+  } = useDashboardStore();
 
-  const hasProjects = filter.projectIds.length > 0;
-  const hasSprints = (filter.sprintIds?.length ?? 0) > 0;
-  const hasDateRange = !!(
-    filter.startDate &&
-    filter.endDate &&
-    new Date(filter.startDate) < new Date(filter.endDate)
-  );
-  const hasPartialDateRange =
-    !!(filter.startDate || filter.endDate) && !hasDateRange;
-  const hasAnyFilter = hasProjects || hasSprints || hasDateRange;
-  const hasFilterToApply =
-    hasProjects && (hasSprints || hasDateRange) && !hasPartialDateRange;
+  const hasAnyFilter = checkIsAnyFilterApplied();
+  const hasFilterToApply = checkIsAllFilterApplied();
 
   const handleReset = () => {
     resetFilter("projectIds");
     resetFilter("sprintIds");
     resetFilter("startDate");
     resetFilter("endDate");
-  };
-
-  const handleApply = () => {
-    console.log("🚀 ~ SidebarApply ~ filter:", filter);
   };
 
   return (
@@ -44,9 +38,10 @@ export function SidebarApply() {
       <Button
         size="sm"
         className="flex-1"
-        disabled={!hasFilterToApply}
-        onClick={handleApply}
+        disabled={!hasFilterToApply || isLoading}
+        onClick={getReportData}
       >
+        {isLoading && <Spinner data-icon="inline-start" />}
         Apply
       </Button>
     </div>

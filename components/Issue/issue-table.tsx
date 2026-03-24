@@ -62,8 +62,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { IssueOverview } from "./";
-import { IssueOverviewData } from "./IssueOverview";
+import { IssueOverview } from ".";
+import { IssueOverviewData } from "./issue-overview";
 
 // Define a reusable component for sortable headers
 const SortableHeader = ({
@@ -207,18 +207,16 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
     ),
   },
   {
-    accessorKey: "totalSpentTime",
+    accessorKey: "spentTime",
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        title={visibleColumns["totalSpentTime"]}
+        title={visibleColumns["spentTime"]}
         className="w-full justify-end"
       />
     ),
     cell: ({ row }) => (
-      <div className="text-right">
-        {Math.round(row.original.totalSpentTime)} hrs
-      </div>
+      <div className="text-right">{Math.round(row.original.spentTime)} hrs</div>
     ),
   },
   {
@@ -249,7 +247,7 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
 
       if (Array.isArray(value)) {
         return value.some((selectedCategory) =>
-          individualRowCategories.includes(selectedCategory)
+          individualRowCategories.includes(selectedCategory),
         );
       }
 
@@ -345,11 +343,11 @@ const columns: ColumnDef<Story | CombinedIssue>[] = [
 ];
 
 export function IssueTable({
-  data,
+  overview,
   issues,
   memberName,
 }: {
-  data: IssueOverviewData;
+  overview: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
   memberName?: string;
 }) {
@@ -364,7 +362,7 @@ export function IssueTable({
       dueStatus: false,
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
@@ -402,10 +400,6 @@ export function IssueTable({
       .flatMap((category) => category.split(",").map((item) => item.trim()))
       .filter(Boolean);
     return Array.from(new Set(individualCategories));
-  }, [issues]);
-  const triggeredByOptions = React.useMemo(() => {
-    const triggeredByValues = issues.map((story) => story.triggeredBy);
-    return Array.from(new Set(triggeredByValues)).filter(Boolean);
   }, [issues]);
 
   const table = useReactTable({
@@ -455,69 +449,54 @@ export function IssueTable({
 
   const completionRateClick = () => {
     table.resetColumnFilters();
-    table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.ONTIME);
+    table
+      .getColumn("tracker")
+      ?.setFilterValue(["Tasks", "Task_Scr", "Suggestion", "Bug"]);
+    table.getColumn("status")?.setFilterValue(["Closed"]);
+    table.getColumn("assignee")?.setFilterValue([memberName]);
+    table.getColumn("doneBy")?.setFilterValue([memberName]);
   };
   const inProgressClick = () => {
     table.resetColumnFilters();
-    table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.INPROGRESS);
+    table
+      .getColumn("tracker")
+      ?.setFilterValue(["Tasks", "Task_Scr", "Suggestion", "Bug"]);
+    table
+      .getColumn("status")
+      ?.setFilterValue(["Waiting", "Confirmed", "In Progress"]);
+    table.getColumn("assignee")?.setFilterValue([memberName]);
+    table.getColumn("doneBy")?.setFilterValue([memberName]);
   };
   const overdueClick = () => {
     table.resetColumnFilters();
+    table.getColumn("tracker")?.setFilterValue(["Tasks", "Task_Scr"]);
     table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.LATE);
   };
-  const criticalBugsClick = () => {
-    let priorities = priorityOptions.filter((item) =>
-      ["Urgent", "Immediate"].includes(item)
-    );
-    if (priorities.length === 0) {
-      priorities = ["Urgent", "Immediate"];
-    }
+  const totalCreatedBugsClick = () => {
     table.resetColumnFilters();
     table.getColumn("tracker")?.setFilterValue(["Bug"]);
-    table.getColumn("priority")?.setFilterValue(priorities);
+    table
+      .getColumn("priority")
+      ?.setFilterValue(["High", "Urgent", "Immediate"]);
   };
-  const highBugsClick = () => {
+  const totalFixedBugsClick = () => {
     table.resetColumnFilters();
     table.getColumn("tracker")?.setFilterValue(["Bug"]);
-    table.getColumn("priority")?.setFilterValue(["High"]);
-  };
-  const postReleaseBugsClick = () => {
-    table.resetColumnFilters();
-    table.getColumn("tracker")?.setFilterValue(["Bug"]);
-    table.getColumn("issueCategories")?.setFilterValue("Post-Release Issue");
-  };
-  const bugsFoundClick = () => {
-    table.resetColumnFilters();
-    table.getColumn("tracker")?.setFilterValue(["Bug"]);
-    table.getColumn("author")?.setFilterValue([memberName]);
-  };
-  const supportedClick = () => {
-    table.resetColumnFilters();
-    // Filter for bugs where triggeredBy is not the current member
-    if (memberName) {
-      const otherTriggeredBy = triggeredByOptions.filter((triggered) => {
-        const triggeredNames = triggered.split(",").map((name) => name.trim());
-        return !triggeredNames.includes(memberName);
-      });
-      table.getColumn("triggeredBy")?.setFilterValue(otherTriggeredBy);
-    }
+    table.getColumn("status")?.setFilterValue(["Closed"]);
+    table.getColumn("assignee")?.setFilterValue([memberName]);
+    table.getColumn("doneBy")?.setFilterValue([memberName]);
   };
 
   return (
     <>
       <IssueOverview
-        data={data}
-        issues={issues}
-        memberName={memberName}
+        data={overview}
         actions={{
           completionRateClick,
           inProgressClick,
           overdueClick,
-          criticalBugsClick,
-          highBugsClick,
-          postReleaseBugsClick,
-          bugsFoundClick,
-          supportedClick,
+          totalCreatedBugsClick,
+          totalFixedBugsClick,
         }}
       />
       <div className="w-full flex-col justify-start gap-6">
@@ -601,7 +580,7 @@ export function IssueTable({
                   .filter(
                     (column) =>
                       typeof column.accessorFn !== "undefined" &&
-                      column.getCanHide()
+                      column.getCanHide(),
                   )
                   .map((column) => {
                     return (
@@ -641,7 +620,7 @@ export function IssueTable({
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     );
@@ -662,7 +641,7 @@ export function IssueTable({
                         <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </TableCell>
                       ))}

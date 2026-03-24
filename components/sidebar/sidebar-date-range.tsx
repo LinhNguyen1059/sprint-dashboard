@@ -6,9 +6,10 @@ import { type DateRange } from "react-day-picker";
 import { SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
 import { Calendar } from "@/components/ui/calendar";
 
-import { useDashboardStore } from "@/stores/dashboardStore";
+import { useDashboardStore, useStoreHydrated } from "@/stores/dashboardStore";
 
 export function SidebarDateRange() {
+  const hydrated = useStoreHydrated();
   const {
     projects,
     filter: { startDate, endDate },
@@ -36,7 +37,7 @@ export function SidebarDateRange() {
     }
   };
 
-  if (!projects.length) return null;
+  if (!projects.length || !hydrated) return null;
 
   return (
     <SidebarGroup className="px-0">

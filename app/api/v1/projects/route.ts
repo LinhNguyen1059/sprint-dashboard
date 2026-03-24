@@ -7,18 +7,24 @@ export async function GET(req: NextRequest) {
     if (result.error) return result.error;
     const { apiKey } = result;
 
-    const response = await redmineFetch("/projects.json", apiKey);
+    const response = await redmineFetch({
+      path: "/projects.json",
+      apiKey,
+    });
 
     if (!response.ok) {
       return NextResponse.json(
         { valid: false, error: "Failed to fetch projects" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
     const data = await response.json();
     return NextResponse.json({ valid: true, projects: data.projects });
   } catch (error) {
-    return NextResponse.json({ projects: [], error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { projects: [], error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

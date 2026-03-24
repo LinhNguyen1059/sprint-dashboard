@@ -23,7 +23,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useDashboardStore } from "@/stores/dashboardStore";
+import { useDashboardStore, useStoreHydrated } from "@/stores/dashboardStore";
 
 const ITEM_HEIGHT = 32;
 const MAX_LIST_HEIGHT = 240;
@@ -48,6 +48,7 @@ function LoadingSkeleton() {
 }
 
 function ProjectList({ searchText }: { searchText: string }) {
+  const hydrated = useStoreHydrated();
   const { projects, filter, toggleProjectInFilter } = useDashboardStore();
 
   const filtered = searchText
@@ -56,7 +57,7 @@ function ProjectList({ searchText }: { searchText: string }) {
       )
     : projects;
 
-  if (!filtered.length) return null;
+  if (!filtered.length || !hydrated) return null;
 
   const listHeight = Math.min(filtered.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
 

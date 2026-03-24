@@ -5,7 +5,10 @@ import { apiFetch } from "@/lib/api-client";
 import { ApiProjectResponse } from "@/lib/types";
 
 export function SidebarLogic() {
-  const { setStates } = useDashboardStore();
+  const { setStates, checkIsAllFilterApplied, getReportData } =
+    useDashboardStore();
+
+  const hasFilterToApply = checkIsAllFilterApplied();
 
   const getProjects = async () => {
     setStates({ isProjectLoading: true });
@@ -25,6 +28,12 @@ export function SidebarLogic() {
 
   useEffect(() => {
     getProjects();
+  }, []);
+
+  useEffect(() => {
+    if (hasFilterToApply) {
+      getReportData();
+    }
   }, []);
 
   return null;
