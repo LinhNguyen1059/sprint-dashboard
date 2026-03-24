@@ -2,10 +2,7 @@
 
 import { useAppStore } from "@/stores/appStore";
 import { useDashboardStore } from "@/stores/dashboardStore";
-
-function clearAuthCookie() {
-  document.cookie = "access_token=; path=/; max-age=0";
-}
+import { clearAccessToken } from "@/lib/auth";
 
 function resetAllStores() {
   useAppStore.getState().reset();
@@ -13,7 +10,7 @@ function resetAllStores() {
 }
 
 export function handleUnauthorized() {
-  clearAuthCookie();
+  clearAccessToken();
   resetAllStores();
 }
 

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { LayoutDashboardIcon } from "lucide-react";
+import { LayoutDashboardIcon, PresentationIcon } from "lucide-react";
 
 import {
   Sidebar as SidebarUI,
@@ -11,6 +11,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarProvider,
   SidebarInset,
 } from "@/components/ui/sidebar";
@@ -21,6 +22,7 @@ import { SidebarDateRange } from "./sidebar-date-range";
 import { SidebarSprint } from "./sidebar-sprint";
 import { SidebarLogic } from "./sidebar.logic";
 import { SidebarApply } from "./sidebar-apply";
+import { SidebarSprintReview } from "./sidebar-sprint-review";
 
 function AppSidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
   return (
@@ -41,6 +43,7 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
         <SidebarDateRange />
       </SidebarContent>
       <SidebarFooter>
+        <SidebarSprintReview />
         <SidebarApply />
       </SidebarFooter>
     </SidebarUI>

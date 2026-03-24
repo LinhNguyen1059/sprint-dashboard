@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { ChevronRight, LogOut } from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,15 +22,14 @@ import { cn } from "@/lib/utils";
 export function SiteHeader() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const { slug } = params;
 
   const { getMemberBySlug } = useDashboardStore();
+  const isSprintReviewPage = pathname.startsWith("/sprint-review");
 
   const slugName = useMemo(() => {
-    if (slug) {
-      return getMemberBySlug(slug as string)?.name;
-    }
-
+    if (slug) return getMemberBySlug(slug as string)?.name;
     return null;
   }, [slug]);
 
@@ -60,9 +59,15 @@ export function SiteHeader() {
         {slugName && (
           <>
             <ChevronRight size={14} />
-            <Link href={`/${slug}`}>
+            <Link href={`/member/${slug}`}>
               <h1 className="text-base font-medium">{slugName}</h1>
             </Link>
+          </>
+        )}
+        {isSprintReviewPage && (
+          <>
+            <ChevronRight size={14} />
+            <h1 className="text-base font-medium">Sprint Review</h1>
           </>
         )}
 

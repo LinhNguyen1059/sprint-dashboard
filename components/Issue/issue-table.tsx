@@ -2,8 +2,6 @@
 
 import * as React from "react";
 import {
-  Column,
-  ColumnDef,
   ColumnFiltersState,
   flexRender,
   getCoreRowModel,
@@ -20,15 +18,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   ChevronsLeft,
   ChevronsRight,
-  ChevronsUpDown,
   X,
 } from "lucide-react";
-import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -46,301 +40,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
-import { CombinedIssue, FeatureStatus, Story } from "@/lib/types";
-import {
-  bugTrackerUrl,
-  cn,
-  getFeatureStatus,
-  visibleColumns,
-} from "@/lib/utils";
-import { Progress } from "../ui/progress";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
+
+import { visibleColumns } from "@/lib/utils";
+import { CombinedIssue, FeatureStatus, Story } from "@/lib/types";
+
 import { IssueOverview } from ".";
 import { IssueOverviewData } from "./issue-overview";
-
-// Define a reusable component for sortable headers
-const SortableHeader = ({
-  column,
-  title,
-  className = "",
-}: {
-  column: Column<Story | CombinedIssue>;
-  title: string;
-  className?: string;
-}) => {
-  return (
-    <Button
-      variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      className={cn("!px-0 hover:bg-transparent", className)}
-    >
-      {title}
-      {column.getIsSorted() === "desc" ? (
-        <ChevronDown className="ml-2 h-4 w-4" />
-      ) : column.getIsSorted() === "asc" ? (
-        <ChevronUp className="ml-2 h-4 w-4" />
-      ) : (
-        <ChevronsUpDown className="ml-2 h-4 w-4" />
-      )}
-    </Button>
-  );
-};
-
-// Define columns with clear, readable structure
-const columns: ColumnDef<Story | CombinedIssue>[] = [
-  {
-    id: "id",
-    header: () => null,
-    cell: ({ row }) => (
-      <Link
-        href={`${bugTrackerUrl}/${row.original.id}`}
-        target="_blank"
-        rel="noopener"
-        className="hover:underline"
-      >
-        {row.original.id}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "subject",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["subject"]} />
-    ),
-    enableHiding: false,
-    cell: ({ row }) => (
-      <div className="truncate max-w-[500px]">{row.original.subject}</div>
-    ),
-    size: 500,
-  },
-  {
-    accessorKey: "parentTaskSubject",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title={visibleColumns["parentTaskSubject"]}
-      />
-    ),
-    enableHiding: true,
-    cell: ({ row }) => (
-      <div className="truncate max-w-[500px]">
-        {row.original.parentTaskSubject}
-      </div>
-    ),
-    size: 500,
-  },
-  {
-    accessorKey: "tracker",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["tracker"]} />
-    ),
-    filterFn: (row, id, value) => {
-      if (!value || (Array.isArray(value) && value.length === 0)) return true;
-
-      const tracker = row.getValue(id);
-      const isWithoutSubtasks = row.original.isWithoutSubtasks;
-
-      if (Array.isArray(value)) {
-        return value.some((filterValue) => {
-          // Check for specific filter values
-          if (filterValue === "Story without subtasks") {
-            return tracker === "Story" && isWithoutSubtasks;
-          }
-          if (filterValue === "Suggestion without subtasks") {
-            return tracker === "Suggestion" && isWithoutSubtasks;
-          }
-
-          return tracker === filterValue;
-        });
-      }
-      return value === "" || tracker === value;
-    },
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["status"]} />
-    ),
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.status}
-      </Badge>
-    ),
-    filterFn: (row, id, value) => {
-      if (!value || (Array.isArray(value) && value.length === 0)) return true;
-      if (Array.isArray(value)) {
-        return value.includes(row.getValue(id));
-      }
-      return value === "" || row.getValue(id) === value;
-    },
-  },
-  {
-    accessorKey: "priority",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["priority"]} />
-    ),
-    filterFn: (row, id, value) => {
-      if (!value || (Array.isArray(value) && value.length === 0)) return true;
-      if (Array.isArray(value)) {
-        return value.includes(row.getValue(id));
-      }
-      return value === "" || row.getValue(id) === value;
-    },
-  },
-  {
-    accessorKey: "closed",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["closed"]} />
-    ),
-  },
-  {
-    accessorKey: "dueDate",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["dueDate"]} />
-    ),
-  },
-  {
-    accessorKey: "spentTime",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title={visibleColumns["spentTime"]}
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row }) => (
-      <div className="text-right">{Math.round(row.original.spentTime)} hrs</div>
-    ),
-  },
-  {
-    accessorKey: "doneBy",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["doneBy"]} />
-    ),
-  },
-  {
-    accessorKey: "issueCategories",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title={visibleColumns["issueCategories"]}
-      />
-    ),
-    filterFn: (row, id, value) => {
-      if (!value || (Array.isArray(value) && value.length === 0)) return true;
-
-      const rowCategories = row.getValue(id) as string;
-
-      if (!rowCategories) return false;
-
-      const individualRowCategories = rowCategories
-        .split(",")
-        .map((cat) => cat.trim())
-        .filter(Boolean);
-
-      if (Array.isArray(value)) {
-        return value.some((selectedCategory) =>
-          individualRowCategories.includes(selectedCategory),
-        );
-      }
-
-      return individualRowCategories.includes(value);
-    },
-  },
-  {
-    accessorKey: "author",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["author"]} />
-    ),
-  },
-  {
-    accessorKey: "assignee",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["assignee"]} />
-    ),
-  },
-  {
-    accessorKey: "triggeredBy",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["triggeredBy"]} />
-    ),
-    filterFn: (row, id, value) => {
-      if (!value || (Array.isArray(value) && value.length === 0)) return true;
-      if (Array.isArray(value)) {
-        return value.includes(row.getValue(id));
-      }
-      return value === "" || row.getValue(id) === value;
-    },
-  },
-  {
-    accessorKey: "percentDone",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["percentDone"]} />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32 flex items-center gap-2">
-        <Progress
-          value={row.original.percentDone}
-          className="bg-primary/10"
-          progressClassName="bg-blue-500"
-        />
-        <span className="">{row.original.percentDone}%</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "created",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["created"]} />
-    ),
-  },
-  {
-    accessorKey: "startDate",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["startDate"]} />
-    ),
-  },
-  {
-    accessorKey: "updated",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["updated"]} />
-    ),
-  },
-  {
-    accessorKey: "lastUpdatedBy",
-    header: ({ column }) => (
-      <SortableHeader column={column} title={visibleColumns["lastUpdatedBy"]} />
-    ),
-  },
-  {
-    accessorKey: "dueStatus",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Due status" />
-    ),
-    cell: ({ row }) => {
-      const status = getFeatureStatus(row.original.dueStatus);
-      return (
-        <Badge
-          variant="outline"
-          className={cn("text-muted-foreground px-1.5", status.class)}
-        >
-          {status.icon && <status.icon />}
-          {status.text}
-        </Badge>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value === "" || !value || row.getValue(id) === value;
-    },
-  },
-];
+import { columns, getMultiFilterValue, getUniqueValues } from "./issue.utils";
 
 export function IssueTable({
   overview,
@@ -360,6 +74,8 @@ export function IssueTable({
       updated: false,
       lastUpdatedBy: false,
       dueStatus: false,
+      // Virtual filter-only column — never rendered
+      assigneeOrDoneBy: false,
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -385,14 +101,14 @@ export function IssueTable({
 
     return options;
   }, [issues]);
-  const statusOptions = React.useMemo(() => {
-    const statuses = issues.map((story) => story.status);
-    return Array.from(new Set(statuses)).filter(Boolean);
-  }, [issues]);
-  const priorityOptions = React.useMemo(() => {
-    const priorities = issues.map((story) => story.priority);
-    return Array.from(new Set(priorities)).filter(Boolean);
-  }, [issues]);
+  const statusOptions = React.useMemo(
+    () => getUniqueValues(issues, "status"),
+    [issues],
+  );
+  const priorityOptions = React.useMemo(
+    () => getUniqueValues(issues, "priority"),
+    [issues],
+  );
   const issueCategoriesOptions = React.useMemo(() => {
     const issueCategories = issues.map((story) => story.issueCategories);
     const individualCategories = issueCategories
@@ -425,67 +141,57 @@ export function IssueTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
-  // Get the current tracker filter value
-  const trackerFilterValue =
-    table.getColumn("tracker")?.getFilterValue() &&
-    Array.isArray(table.getColumn("tracker")?.getFilterValue())
-      ? (table.getColumn("tracker")?.getFilterValue() as string[])
-      : [];
-  const statusFilterValue =
-    table.getColumn("status")?.getFilterValue() &&
-    Array.isArray(table.getColumn("status")?.getFilterValue())
-      ? (table.getColumn("status")?.getFilterValue() as string[])
-      : [];
-  const priorityFilterValue =
-    table.getColumn("priority")?.getFilterValue() &&
-    Array.isArray(table.getColumn("priority")?.getFilterValue())
-      ? (table.getColumn("priority")?.getFilterValue() as string[])
-      : [];
-  const issueCategoriesFilterValue =
-    table.getColumn("issueCategories")?.getFilterValue() &&
-    Array.isArray(table.getColumn("issueCategories")?.getFilterValue())
-      ? (table.getColumn("issueCategories")?.getFilterValue() as string[])
-      : [];
+  const trackerFilterValue = getMultiFilterValue(
+    table.getColumn("tracker")?.getFilterValue(),
+  );
+  const statusFilterValue = getMultiFilterValue(
+    table.getColumn("status")?.getFilterValue(),
+  );
+  const priorityFilterValue = getMultiFilterValue(
+    table.getColumn("priority")?.getFilterValue(),
+  );
+  const issueCategoriesFilterValue = getMultiFilterValue(
+    table.getColumn("issueCategories")?.getFilterValue(),
+  );
 
-  const completionRateClick = () => {
+  /** Resets all column filters then applies the provided set of filter values. */
+  const applyOverviewFilter = (filters: Record<string, unknown>) => () => {
     table.resetColumnFilters();
+    for (const [col, val] of Object.entries(filters)) {
+      table.getColumn(col)?.setFilterValue(val);
+    }
+  };
+
+  /** Returns an `onSelectionChange` handler that sets a named column filter. */
+  const setColumnFilter = (columnId: string) => (values: string[]) => {
     table
-      .getColumn("tracker")
-      ?.setFilterValue(["Tasks", "Task_Scr", "Suggestion", "Bug"]);
-    table.getColumn("status")?.setFilterValue(["Closed"]);
-    table.getColumn("assignee")?.setFilterValue([memberName]);
-    table.getColumn("doneBy")?.setFilterValue([memberName]);
+      .getColumn(columnId)
+      ?.setFilterValue(values.length > 0 ? values : undefined);
   };
-  const inProgressClick = () => {
-    table.resetColumnFilters();
-    table
-      .getColumn("tracker")
-      ?.setFilterValue(["Tasks", "Task_Scr", "Suggestion", "Bug"]);
-    table
-      .getColumn("status")
-      ?.setFilterValue(["Waiting", "Confirmed", "In Progress"]);
-    table.getColumn("assignee")?.setFilterValue([memberName]);
-    table.getColumn("doneBy")?.setFilterValue([memberName]);
-  };
-  const overdueClick = () => {
-    table.resetColumnFilters();
-    table.getColumn("tracker")?.setFilterValue(["Tasks", "Task_Scr"]);
-    table.getColumn("dueStatus")?.setFilterValue(FeatureStatus.LATE);
-  };
-  const totalCreatedBugsClick = () => {
-    table.resetColumnFilters();
-    table.getColumn("tracker")?.setFilterValue(["Bug"]);
-    table
-      .getColumn("priority")
-      ?.setFilterValue(["High", "Urgent", "Immediate"]);
-  };
-  const totalFixedBugsClick = () => {
-    table.resetColumnFilters();
-    table.getColumn("tracker")?.setFilterValue(["Bug"]);
-    table.getColumn("status")?.setFilterValue(["Closed"]);
-    table.getColumn("assignee")?.setFilterValue([memberName]);
-    table.getColumn("doneBy")?.setFilterValue([memberName]);
-  };
+
+  const completionRateClick = applyOverviewFilter({
+    tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
+    status: ["Closed"],
+    assigneeOrDoneBy: memberName,
+  });
+  const inProgressClick = applyOverviewFilter({
+    tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
+    status: ["Waiting", "Confirmed", "In Progress"],
+    assigneeOrDoneBy: memberName,
+  });
+  const overdueClick = applyOverviewFilter({
+    tracker: ["Tasks", "Task_Scr"],
+    dueStatus: FeatureStatus.LATE,
+  });
+  const totalCreatedBugsClick = applyOverviewFilter({
+    tracker: ["Bug"],
+    priority: ["High", "Urgent", "Immediate"],
+  });
+  const totalFixedBugsClick = applyOverviewFilter({
+    tracker: ["Bug"],
+    status: ["Closed"],
+    assigneeOrDoneBy: memberName,
+  });
 
   return (
     <>
@@ -502,52 +208,29 @@ export function IssueTable({
       <div className="w-full flex-col justify-start gap-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            {/* Tracker Multi-Select Filter */}
             <MultiSelectFilter
               options={trackerOptions}
               selectedValues={trackerFilterValue}
-              onSelectionChange={(values) => {
-                table
-                  .getColumn("tracker")
-                  ?.setFilterValue(values.length > 0 ? values : undefined);
-              }}
+              onSelectionChange={setColumnFilter("tracker")}
               placeholder="All Trackers"
               popoverWidth="w-56"
             />
-
-            {/* Status Multi-Select Filter */}
             <MultiSelectFilter
               options={statusOptions}
               selectedValues={statusFilterValue}
-              onSelectionChange={(values) => {
-                table
-                  .getColumn("status")
-                  ?.setFilterValue(values.length > 0 ? values : undefined);
-              }}
+              onSelectionChange={setColumnFilter("status")}
               placeholder="All Statuses"
             />
-
-            {/* Priority Multi-Select Filter */}
             <MultiSelectFilter
               options={priorityOptions}
               selectedValues={priorityFilterValue}
-              onSelectionChange={(values) => {
-                table
-                  .getColumn("priority")
-                  ?.setFilterValue(values.length > 0 ? values : undefined);
-              }}
+              onSelectionChange={setColumnFilter("priority")}
               placeholder="All Priorities"
             />
-
-            {/* Issue Categories Multi-Select Filter */}
             <MultiSelectFilter
               options={issueCategoriesOptions}
               selectedValues={issueCategoriesFilterValue}
-              onSelectionChange={(values) => {
-                table
-                  .getColumn("issueCategories")
-                  ?.setFilterValue(values.length > 0 ? values : undefined);
-              }}
+              onSelectionChange={setColumnFilter("issueCategories")}
               placeholder="All Issue Categories"
             />
 

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/input-group";
 
 import { useAppStore } from "@/stores/appStore";
+import { setAccessToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function LoginForm() {
@@ -52,7 +53,7 @@ export function LoginForm() {
       if (response.ok) {
         const data = await response.json();
         if (data.valid) {
-          document.cookie = `access_token=${apiKey}; path=/; max-age=31536000`;
+          setAccessToken(apiKey);
           setStates({ authenticated: true });
         } else {
           toast.error("Invalid API key. Please try again.");
