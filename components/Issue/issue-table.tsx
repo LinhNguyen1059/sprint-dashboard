@@ -49,19 +49,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { visibleColumns } from "@/lib/utils";
+import { excludedIssueCategories, visibleColumns } from "@/lib/utils";
 import { CombinedIssue, FeatureStatus, Story } from "@/lib/types";
 
 import { IssueOverview } from ".";
-import { IssueOverviewData } from "./issue-overview";
 import { columns, getMultiFilterValue, getUniqueValues } from "./issue.utils";
 
 export function IssueTable({
-  overview,
   issues,
   memberName,
 }: {
-  overview: IssueOverviewData;
   issues: Story[] | CombinedIssue[];
   memberName?: string;
 }) {
@@ -186,23 +183,34 @@ export function IssueTable({
   const totalCreatedBugsClick = applyOverviewFilter({
     tracker: ["Bug"],
     priority: ["High", "Urgent", "Immediate"],
+    excludeIssueCategories: excludedIssueCategories,
   });
   const totalFixedBugsClick = applyOverviewFilter({
     tracker: ["Bug"],
     status: ["Closed"],
     assigneeOrDoneBy: memberName,
+    excludeIssueCategories: excludedIssueCategories,
+  });
+  const totalFoundBugsClick = applyOverviewFilter({
+    tracker: ["Bug"],
+    author: memberName,
+  });
+  const totalConfirmedBugsClick = applyOverviewFilter({
+    tracker: ["Bug"],
+    doneBy: memberName,
   });
 
   return (
     <>
       <IssueOverview
-        data={overview}
         actions={{
           completionRateClick,
           inProgressClick,
           overdueClick,
           totalCreatedBugsClick,
           totalFixedBugsClick,
+          totalFoundBugsClick,
+          totalConfirmedBugsClick,
         }}
       />
       <div className="w-full flex-col justify-start gap-6">

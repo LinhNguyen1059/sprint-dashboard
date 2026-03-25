@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useRef, useEffect } from "react";
+import { Fragment, useState, useRef, useEffect, useMemo } from "react";
 import { Search, X } from "lucide-react";
 
 import {
@@ -26,7 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardStore, useStoreHydrated } from "@/stores/dashboardStore";
 
 const ITEM_HEIGHT = 32;
-const MAX_LIST_HEIGHT = 240;
 
 function LoadingSkeleton() {
   const { projects, isProjectLoading } = useDashboardStore();
@@ -51,23 +50,36 @@ function ProjectList({ searchText }: { searchText: string }) {
   const hydrated = useStoreHydrated();
   const { projects, filter, toggleProjectInFilter } = useDashboardStore();
 
-  const filtered = searchText
-    ? projects.filter((p) =>
-        p.name.toLowerCase().includes(searchText.toLowerCase()),
-      )
-    : projects;
+  const filtered = useMemo(() => {
+    const list = searchText
+      ? projects.filter((p) =>
+          p.name.toLowerCase().includes(searchText.toLowerCase()),
+        )
+      : projects;
+    return [...list].sort((a, b) => {
+      const aSelected = filter.projectIds.includes(a.id) ? 0 : 1;
+      const bSelected = filter.projectIds.includes(b.id) ? 0 : 1;
+      return aSelected - bSelected;
+    });
+  }, [projects, searchText, filter.projectIds]);
 
-  if (!filtered.length || !hydrated) return null;
+  if (!hydrated) return null;
 
-  const listHeight = Math.min(filtered.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
+  if (searchText.length > 0 && filtered.length === 0) {
+    return (
+      <SidebarMenuItem className="px-2 py-1 text-sm text-center">
+        No results.
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <VirtualizedScrollArea
       items={filtered}
-      listHeight={listHeight}
+      listHeight="100%"
       estimateSize={() => ITEM_HEIGHT}
       getItemKey={(index) => filtered[index].id}
-      renderItem={(project, index) => (
+      renderItem={(project) => (
         <SidebarMenuItem>
           <FieldLabel className="p-2 !border-0 !rounded-none">
             <Field orientation="horizontal" className="!p-0 overflow-hidden">
@@ -94,6 +106,10 @@ function ProjectList({ searchText }: { searchText: string }) {
 }
 
 export function SidebarProject() {
+  const {
+    filter: { projectIds },
+  } = useDashboardStore();
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -108,7 +124,7 @@ export function SidebarProject() {
 
   return (
     <Fragment>
-      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+      <SidebarGroup className="h-[50vh] flex flex-col">
         {searchOpen ? (
           <div className="flex items-center gap-1 px-2 h-7 mb-2">
             <InputGroup className="h-7">
@@ -134,7 +150,7 @@ export function SidebarProject() {
           </div>
         ) : (
           <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
-            Projects
+            Projects {projectIds.length > 0 ? `(${projectIds.length})` : ""}
             <Button
               variant="ghost"
               size="icon"
@@ -145,8 +161,8 @@ export function SidebarProject() {
             </Button>
           </SidebarGroupLabel>
         )}
-        <SidebarGroupContent>
-          <SidebarMenu>
+        <SidebarGroupContent className="flex-1 min-h-0">
+          <SidebarMenu className="h-full">
             <LoadingSkeleton />
             <ProjectList searchText={searchText} />
           </SidebarMenu>

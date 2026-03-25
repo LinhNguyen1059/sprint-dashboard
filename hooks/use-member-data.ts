@@ -8,6 +8,7 @@ import {
 } from "@/lib/utils";
 import { FeatureStatus } from "@/lib/types";
 import type { IssueOverviewData } from "@/components/issue/issue-overview";
+import { isTester } from "@/lib/teams";
 
 const EMPTY_OVERVIEW: IssueOverviewData = {
   completion: 0,
@@ -16,6 +17,8 @@ const EMPTY_OVERVIEW: IssueOverviewData = {
   totalCreatedBugs: 0,
   totalFixedBugs: 0,
   totalSpentTime: 0,
+  totalFoundBugs: 0,
+  totalConfirmedBugs: 0,
 };
 
 /**
@@ -26,6 +29,10 @@ export function useMemberData(slug: string) {
   const memberData = useDashboardStore(
     useCallback((s) => s.getMemberBySlug(slug), [slug]),
   );
+
+  const isTesterMember = useMemo(() => {
+    return isTester(memberData?.name || "");
+  }, [memberData]);
 
   const overviewData = useMemo<IssueOverviewData>(() => {
     if (!memberData?.issues?.length) return EMPTY_OVERVIEW;
@@ -56,11 +63,20 @@ export function useMemberData(slug: string) {
     ).length;
 
     const totalSpentTime = issues.reduce((total, issue) => {
-      if ("timeSpent" in issue && typeof issue.timeSpent === "number") {
-        return total + issue.timeSpent;
+      if ("spentTime" in issue && typeof issue.spentTime === "number") {
+        return total + issue.spentTime;
       }
       return total;
     }, 0);
+
+    const bugFound = memberData.issues.filter(
+      (issue) => issue.tracker === "Bug" && issue.author === memberData.name,
+    ).length;
+
+    const bugConfirmed = memberData.issues.filter(
+      (issue) =>
+        issue.tracker === "Bug" && issue.doneBy.includes(memberData.name),
+    ).length;
 
     return {
       completion,
@@ -68,7 +84,9 @@ export function useMemberData(slug: string) {
       overdueTasks,
       totalCreatedBugs,
       totalFixedBugs,
-      totalSpentTime,
+      totalSpentTime: parseFloat(totalSpentTime.toFixed(2)),
+      totalFoundBugs: bugFound,
+      totalConfirmedBugs: bugConfirmed,
     };
   }, [memberData]);
 
@@ -79,8 +97,21 @@ export function useMemberData(slug: string) {
       { label: "Completion Rate", value: overviewData.completion },
       { label: "In Progress Rate", value: overviewData.inprogress },
       { label: "Overdue Tasks", value: overviewData.overdueTasks },
-      { label: "Total Created Bugs", value: overviewData.totalCreatedBugs },
-      { label: "Total Fixed Bugs", value: overviewData.totalFixedBugs },
+      ...(isTesterMember
+        ? [
+            { label: "Total Found Bugs", value: overviewData.totalFoundBugs },
+            {
+              label: "Total Confirmed Bugs",
+              value: overviewData.totalConfirmedBugs,
+            },
+          ]
+        : [
+            {
+              label: "Total Created Bugs",
+              value: overviewData.totalCreatedBugs,
+            },
+            { label: "Total Fixed Bugs", value: overviewData.totalFixedBugs },
+          ]),
       { label: "Total Spent Time", value: overviewData.totalSpentTime },
     ];
 
@@ -89,7 +120,7 @@ export function useMemberData(slug: string) {
       `${memberData.name}.csv`,
       overviewRows,
     );
-  }, [memberData, overviewData]);
+  }, [memberData, overviewData, isTesterMember]);
 
-  return { memberData, overviewData, handleExport };
+  return { memberData, overviewData, isTesterMember, handleExport };
 }

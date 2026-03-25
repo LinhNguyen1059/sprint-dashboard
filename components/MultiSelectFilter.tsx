@@ -74,7 +74,7 @@ export function MultiSelectFilter({
                 />
                 <label
                   htmlFor={`multi-select-${option}`}
-                  className="flex-1 cursor-pointer text-sm"
+                  className="flex-1 cursor-pointer text-sm block truncate"
                 >
                   {option}
                 </label>

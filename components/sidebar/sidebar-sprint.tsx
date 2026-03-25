@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useRef, useEffect } from "react";
+import { Fragment, useState, useRef, useEffect, useMemo } from "react";
 import { Search, X } from "lucide-react";
 
 import {
@@ -54,13 +54,28 @@ function SprintList({ searchText }: { searchText: string }) {
   const { sprints, filter, isSprintLoading, toggleSprintInFilter } =
     useDashboardStore();
 
-  const filtered = searchText
-    ? sprints.filter((p) =>
-        p.name.toLowerCase().includes(searchText.toLowerCase()),
-      )
-    : sprints;
+  const filtered = useMemo(() => {
+    const list = searchText
+      ? sprints.filter((p) =>
+          p.name.toLowerCase().includes(searchText.toLowerCase()),
+        )
+      : sprints;
+    return [...list].sort((a, b) => {
+      const aSelected = filter.sprintIds?.includes(a.id) ? 0 : 1;
+      const bSelected = filter.sprintIds?.includes(b.id) ? 0 : 1;
+      return aSelected - bSelected;
+    });
+  }, [sprints, searchText, filter.sprintIds]);
 
-  if (!filtered.length || isSprintLoading || !hydrated) return null;
+  if (isSprintLoading || !hydrated) return null;
+
+  if (!filtered.length) {
+    return (
+      <SidebarMenuItem className="px-2 py-1 text-sm text-center">
+        No results.
+      </SidebarMenuItem>
+    );
+  }
 
   const listHeight = Math.min(filtered.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
 
@@ -98,7 +113,7 @@ function SprintList({ searchText }: { searchText: string }) {
 
 export function SidebarSprint() {
   const {
-    filter: { projectIds },
+    filter: { projectIds, sprintIds },
     setStates,
   } = useDashboardStore();
 
@@ -178,7 +193,8 @@ export function SidebarSprint() {
           </div>
         ) : (
           <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
-            Sprints
+            Sprints{" "}
+            {sprintIds && sprintIds.length > 0 ? `(${sprintIds.length})` : ""}
             <Button
               variant="ghost"
               size="icon"

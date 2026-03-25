@@ -9,7 +9,7 @@ interface VirtualizedScrollAreaProps<T> {
   overscan?: number;
   estimateSize: (index: number) => number;
   getItemKey?: (index: number) => string | number;
-  listHeight: number;
+  listHeight: number | string;
   className?: string;
   initialScroll?: {
     index: number;
@@ -37,6 +37,7 @@ const VirtualizedScrollArea = ({
   initialScroll,
   className,
   ...props
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }: VirtualizedScrollAreaProps<any>) => {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
@@ -75,7 +76,9 @@ const VirtualizedScrollArea = ({
   }, [initialScroll?.index, rowVirtualizer]);
   return (
     <ScrollArea
-      style={{ height: `${listHeight}px` }}
+      style={{
+        height: typeof listHeight === "number" ? `${listHeight}px` : listHeight,
+      }}
       viewPortRef={parentRef}
       {...props}
     >

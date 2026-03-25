@@ -10,7 +10,7 @@ const ScrollArea = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
     viewPortClassName?: string;
     orientation?: "vertical" | "horizontal";
-    viewPortRef?: React.RefObject<HTMLDivElement>;
+    viewPortRef?: React.RefObject<HTMLDivElement | null>;
   }
 >(
   (
@@ -44,6 +44,7 @@ const ScrollArea = React.forwardRef<
     );
   },
 );
+ScrollArea.displayName = "ScrollArea";
 
 function ScrollBar({
   className,

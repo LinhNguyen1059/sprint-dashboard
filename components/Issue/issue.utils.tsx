@@ -245,6 +245,23 @@ export const columns: ColumnDef<Story | CombinedIssue>[] = [
       return assignee === member || doneBy?.includes(member);
     },
   },
+  /**
+   * Virtual filter-only column.
+   * When set to a list of category strings, excludes any row whose
+   * issueCategories contains at least one of those categories.
+   */
+  {
+    id: "excludeIssueCategories",
+    filterFn: (row, _id, excluded: string[]) => {
+      if (!excluded || excluded.length === 0) return true;
+      const raw = row.original.issueCategories ?? "";
+      const rowCategories = raw
+        .split(",")
+        .map((c: string) => c.trim())
+        .filter(Boolean);
+      return !rowCategories.some((cat: string) => excluded.includes(cat));
+    },
+  },
   {
     accessorKey: "triggeredBy",
     header: ({ column }) => (

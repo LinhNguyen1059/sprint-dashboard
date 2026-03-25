@@ -1,11 +1,15 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
 import { useDashboardStore } from "@/stores/dashboardStore";
 
 export function SidebarApply() {
+  const router = useRouter();
+
   const {
     isLoading,
     resetFilter,
@@ -24,6 +28,11 @@ export function SidebarApply() {
     resetFilter("endDate");
   };
 
+  const handleApply = () => {
+    getReportData();
+    router.push("/");
+  };
+
   return (
     <div className="flex gap-2 p-2">
       <Button
@@ -39,7 +48,7 @@ export function SidebarApply() {
         size="sm"
         className="flex-1"
         disabled={!hasFilterToApply || isLoading}
-        onClick={getReportData}
+        onClick={handleApply}
       >
         {isLoading && <Spinner data-icon="inline-start" />}
         Apply

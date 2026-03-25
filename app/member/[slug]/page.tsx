@@ -12,9 +12,7 @@ export default function MemberPage() {
   const params = useParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
-  const { memberData, overviewData, handleExport } = useMemberData(
-    slug as string,
-  );
+  const { memberData, handleExport } = useMemberData(slug as string);
 
   usePageTitle(memberData?.name ?? "Member");
 
@@ -40,11 +38,7 @@ export default function MemberPage() {
         </div>
       </div>
 
-      <IssueTable
-        overview={overviewData}
-        issues={memberData.issues}
-        memberName={memberData.name}
-      />
+      <IssueTable issues={memberData.issues} memberName={memberData.name} />
     </div>
   );
 }

@@ -1,10 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { CalendarIcon, X } from "lucide-react";
+import { format } from "date-fns";
 import { type DateRange } from "react-day-picker";
 
-import { SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+} from "@/components/ui/sidebar";
 
 import { useDashboardStore, useStoreHydrated } from "@/stores/dashboardStore";
 
@@ -40,18 +53,60 @@ export function SidebarDateRange() {
   if (!projects.length || !hydrated) return null;
 
   return (
-    <SidebarGroup className="px-0">
+    <SidebarGroup>
+      <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
+        Date Range
+      </SidebarGroupLabel>
       <SidebarGroupContent>
-        <Calendar
-          className="w-full"
-          mode="range"
-          defaultMonth={date?.from}
-          selected={date}
-          onSelect={setDate}
-          numberOfMonths={1}
-          disabled={{ after: new Date() }}
-          endMonth={new Date()}
-        />
+        <SidebarMenu>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                id="date-picker-range"
+                className="justify-start px-2.5 font-normal"
+              >
+                <CalendarIcon />
+                {date?.from ? (
+                  date.to ? (
+                    <>
+                      {format(date.from, "LLL dd, y")} -{" "}
+                      {format(date.to, "LLL dd, y")}
+                    </>
+                  ) : (
+                    format(date.from, "LLL dd, y")
+                  )
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                className="w-full"
+                mode="range"
+                defaultMonth={date?.from}
+                selected={date}
+                onSelect={setDate}
+                numberOfMonths={2}
+                disabled={{ after: new Date() }}
+                endMonth={new Date()}
+              />
+              {date?.from || date?.to ? (
+                <div className="w-full p-2 text-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDate(undefined)}
+                  >
+                    <X className="size-4" />
+                    Clear
+                  </Button>
+                </div>
+              ) : null}
+            </PopoverContent>
+          </Popover>
+        </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
   );

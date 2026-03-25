@@ -7,6 +7,7 @@ import {
 } from "./types";
 import { formatValueToSlug } from "./utils";
 import { getMemberRole, getTestersNames } from "./teams";
+import { isValid } from "date-fns";
 
 /**
  * Calculate feature status based on due date, closed date and status
@@ -221,6 +222,12 @@ export function calculateMembers(
   return Object.values(memberMap);
 }
 
+function isValidDate(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  return isValid(date) && date.getFullYear() >= 1900;
+}
+
 export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
   if (!data || data.length === 0) {
     return [];
@@ -237,30 +244,30 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       assignee: row["assignee"] || "",
       priority: row["priority"] || "",
       foundVersion: row["foundVersion"] || "",
-      dueDate: row["dueDate"] || "",
+      dueDate: isValidDate(row["dueDate"]) ? row["dueDate"] : "",
       targetVersion: row["targetVersion"] || "",
       relatedAppVersion: row["relatedAppVersion"] || "",
       sprint: row["sprint"] || "",
       project: row["project"] || "",
       parentTask: row["parentTask"] ? parseInt(row["parentTask"], 10) : null,
       parentTaskSubject: row["parentTaskSubject"] || "",
-      updated: row["updated"] || "",
+      updated: isValidDate(row["updated"]) ? row["updated"] : "",
       category: row["category"] || "",
-      startDate: row["startDate"] || "",
+      startDate: isValidDate(row["startDate"]) ? row["startDate"] : "",
       estimatedTime: row["estimatedTime"] || 0,
       totalEstimatedTime: row["totalEstimatedTime"] || 0,
       spentTime: row["spentTime"] || 0,
       totalSpentTime: row["totalSpentTime"] || 0,
       percentDone: row["percentDone"] || 0,
-      created: row["created"] || "",
-      closed: row["closed"] || "",
+      created: isValidDate(row["created"]) ? row["created"] : "",
+      closed: isValidDate(row["closed"]) ? row["closed"] : "",
       lastUpdatedBy: row["lastUpdatedBy"] || "",
       relatedIssues: row["relatedIssues"] || "",
       tags: row["tags"]
         ? row["tags"].split(",").map((tag: string) => tag.trim())
         : [],
       doneBy: row["doneBy"] || "",
-      projectName: row["projectName"] || "",
+      projectName: row["projectName"] || row["project"] || "",
       position: row["position"] || "",
       issueCategories: row["issueCategories"] || "",
       private: row["private"] === "1",
