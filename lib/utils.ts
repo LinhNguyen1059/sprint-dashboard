@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CombinedIssue, Feature, FeatureStatus, Issue, Story } from "./types";
+import { CombinedIssue, FeatureStatus, Issue } from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
 import { getDevelopers, isTester } from "./teams";
 
@@ -20,17 +20,6 @@ export function formatValueToSlug(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
-
-export const isRouteActive = (routeUrl: string, path: string) => {
-  if (routeUrl === path) return true;
-
-  if (path.startsWith(routeUrl)) {
-    const nextChar = path[routeUrl.length];
-    return nextChar === "/" || nextChar === undefined;
-  }
-
-  return false;
-};
 
 export const getFeatureStatus = (status: number) => {
   switch (status) {
@@ -56,6 +45,7 @@ export const getFeatureStatus = (status: number) => {
 };
 
 export const visibleColumns = {
+  id: "#",
   percentDone: "Progress",
   dueStatus: "Due Status",
   criticalBugs: "Critical bugs",
@@ -98,79 +88,96 @@ export const visibleColumns = {
   storyPoints: "Story points",
   ontimePercent: "% Tasks On Time",
   triggeredBy: "Triggered By",
-};
-
-// Chart color utilities
-export const CHART_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "var(--chart-6)",
-  "var(--chart-7)",
-  "var(--chart-8)",
-  "var(--chart-9)",
-  "var(--chart-10)",
-  "var(--chart-11)",
-  "var(--chart-12)",
-  "var(--chart-13)",
-  "var(--chart-14)",
-  "var(--chart-15)",
-  "var(--chart-16)",
-  "var(--chart-17)",
-  "var(--chart-18)",
-  "var(--chart-19)",
-  "var(--chart-20)",
-  "var(--chart-21)",
-  "var(--chart-22)",
-  "var(--chart-23)",
-  "var(--chart-24)",
-  "var(--chart-25)",
-  "var(--chart-26)",
-  "var(--chart-27)",
-  "var(--chart-28)",
-  "var(--chart-29)",
-  "var(--chart-30)",
-] as const;
-
-export const getChartColor = (index: number): string => {
-  return CHART_COLORS[index % CHART_COLORS.length];
-};
-
-export const getChartColors = (count: number): string[] => {
-  return Array.from({ length: count }, (_, i) => getChartColor(i));
+  projectName: "Project name",
 };
 
 export const bugTrackerUrl = "https://bugtracker.i3international.com/issues";
 
-export const flattenedIssues = (features: Feature[]) => {
-  if (!features || features.length === 0) {
-    return [];
+export interface OverviewSummary {
+  label: string;
+  value: string | number;
+}
+
+export function exportIssuesToCSV(
+  issues: CombinedIssue[],
+  filename = "issues.csv",
+  overview?: OverviewSummary[],
+) {
+  if (!issues.length) return;
+
+  const columns: (keyof Issue)[] = [
+    "id",
+    "tracker",
+    "status",
+    "subject",
+    "author",
+    "assignee",
+    "priority",
+    "project",
+    "projectName",
+    "sprint",
+    "category",
+    "issueCategories",
+    "parentTask",
+    "parentTaskSubject",
+    "startDate",
+    "dueDate",
+    "closed",
+    "created",
+    "updated",
+    "lastUpdatedBy",
+    "estimatedTime",
+    "totalEstimatedTime",
+    "spentTime",
+    "totalSpentTime",
+    "percentDone",
+    "targetVersion",
+    "relatedAppVersion",
+    "foundVersion",
+    "relatedIssues",
+    "tags",
+    "doneBy",
+    "position",
+    "storyPoints",
+    "triggeredBy",
+    "private",
+  ];
+
+  const escape = (val: unknown): string => {
+    const str =
+      val == null ? "" : Array.isArray(val) ? val.join(", ") : String(val);
+    return str.includes(",") || str.includes('"') || str.includes("\n")
+      ? `"${str.replace(/"/g, '""')}"`
+      : str;
+  };
+
+  const header = columns
+    .map((col) => visibleColumns[col as keyof typeof visibleColumns] ?? col)
+    .join(",");
+  const rows = issues.map((issue) =>
+    columns.map((col) => escape(issue[col])).join(","),
+  );
+
+  const sections: string[] = [header, ...rows];
+
+  if (overview?.length) {
+    sections.push(" "); // blank line separator
+    sections.push("Overview");
+    sections.push("Metric,Value");
+    overview.forEach(({ label, value }) =>
+      sections.push(`${escape(label)},${escape(value)}`),
+    );
   }
 
-  const allItems: Story[] = [];
-
-  features.forEach((feature) => {
-    feature.stories.forEach((story) => {
-      allItems.push(story);
-
-      story.issues.forEach((issue) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        allItems.push(issue);
-      });
-    });
-
-    feature.others.forEach((issue) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      allItems.push(issue);
-    });
-  });
-
-  return allItems;
-};
+  const csv = sections.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 export const countBugsByPriority = ({
   member,
@@ -196,7 +203,10 @@ export const countBugsByPriority = ({
       .filter(Boolean);
 
     if (
-      categories.some((category) => excludedIssueCategories.includes(category)) && !isTesterMember
+      categories.some((category) =>
+        excludedIssueCategories.includes(category),
+      ) &&
+      !isTesterMember
     ) {
       return count;
     }
@@ -248,21 +258,34 @@ export const countBugsSupportedByMember = ({
   }, 0);
 };
 
-export const convertBlobToFile = (blob: Blob, name: string) => {
-  return new File([blob], name, { type: blob.type });
-};
+export const calculateOverviewRate = (data: Issue[], member: string) => {
+  const issues = data.filter(
+    (issue) =>
+      issue.tracker === "Tasks" ||
+      issue.tracker === "Task_Scr" ||
+      issue.tracker === "Suggestion" ||
+      issue.tracker === "Bug",
+  );
 
-export const formatBytes = (bytes: number, decimals = 2): string => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = [
-    "Bytes",
-    "KB",
-    "MB",
-    "GB",
-    "TB",
-  ];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  const openIssues = issues.filter(
+    (issue) =>
+      issue.status === "Waiting" ||
+      issue.status === "Confirmed" ||
+      issue.status === "In Progress",
+  );
+  const closedIssues = issues.filter((issue) => issue.status === "Closed");
+  const assignedIssues = issues.filter(
+    (issue) => issue.assignee === member || issue.doneBy.includes(member),
+  );
+
+  const completion =
+    assignedIssues.length > 0
+      ? Math.round((closedIssues.length / assignedIssues.length) * 100)
+      : 0;
+  const inprogress =
+    assignedIssues.length > 0
+      ? Math.round((openIssues.length / assignedIssues.length) * 100)
+      : 0;
+
+  return { completion, inprogress };
 };

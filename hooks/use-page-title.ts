@@ -10,7 +10,7 @@ export function usePageTitle(title: string, restoreOnUnmount = true) {
     }
 
     // Set the new title
-    document.title = `${title} - OKR Dashboard`;
+    document.title = `${title} - Redmine Dashboard`;
 
     // Restore original title on unmount if requested
     return () => {
