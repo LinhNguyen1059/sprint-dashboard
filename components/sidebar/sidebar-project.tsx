@@ -1,7 +1,6 @@
 "use client";
 
-import { Fragment, useState, useRef, useEffect, useMemo } from "react";
-import { Search, X } from "lucide-react";
+import { Fragment } from "react";
 
 import {
   SidebarGroup,
@@ -11,24 +10,33 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { VirtualizedScrollArea } from "@/components/ui/virtualized-scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@/components/ui/combobox";
 
-import { useDashboardStore, useStoreHydrated } from "@/stores/dashboardStore";
-
-const ITEM_HEIGHT = 32;
+import { useDashboardStore } from "@/stores/dashboardStore";
+import { ApiProjectResponse } from "@/lib/types";
 
 function LoadingSkeleton() {
   const { projects, isProjectLoading } = useDashboardStore();
+
+  if (!isProjectLoading && projects.length === 0) {
+    return (
+      <SidebarMenuItem className="p-2 text-center text-sm text-sidebar-foreground">
+        No projects found
+      </SidebarMenuItem>
+    );
+  }
 
   if (!isProjectLoading || projects.length > 0) return null;
 
@@ -46,125 +54,67 @@ function LoadingSkeleton() {
   ));
 }
 
-function ProjectList({ searchText }: { searchText: string }) {
-  const hydrated = useStoreHydrated();
-  const { projects, filter, toggleProjectInFilter } = useDashboardStore();
-
-  const filtered = useMemo(() => {
-    const list = searchText
-      ? projects.filter((p) =>
-          p.name.toLowerCase().includes(searchText.toLowerCase()),
-        )
-      : projects;
-    return [...list].sort((a, b) => {
-      const aSelected = filter.projectIds.includes(a.id) ? 0 : 1;
-      const bSelected = filter.projectIds.includes(b.id) ? 0 : 1;
-      return aSelected - bSelected;
-    });
-  }, [projects, searchText, filter.projectIds]);
-
-  if (!hydrated) return null;
-
-  if (searchText.length > 0 && filtered.length === 0) {
-    return (
-      <SidebarMenuItem className="px-2 py-1 text-sm text-center">
-        No results.
-      </SidebarMenuItem>
-    );
-  }
-
-  return (
-    <VirtualizedScrollArea
-      items={filtered}
-      listHeight="100%"
-      estimateSize={() => ITEM_HEIGHT}
-      getItemKey={(index) => filtered[index].id}
-      renderItem={(project) => (
-        <SidebarMenuItem>
-          <FieldLabel className="p-2 !border-0 !rounded-none">
-            <Field orientation="horizontal" className="!p-0 overflow-hidden">
-              <Checkbox
-                id={`project-checkbox-${project.id}`}
-                name={`project-checkbox-${project.id}`}
-                checked={filter.projectIds.includes(project.id)}
-                onCheckedChange={(value: boolean) => {
-                  toggleProjectInFilter(project.id, value);
-                }}
-              />
-              <Label
-                htmlFor={`project-checkbox-${project.id}`}
-                className="flex-1 truncate block"
-              >
-                {project.name}
-              </Label>
-            </Field>
-          </FieldLabel>
-        </SidebarMenuItem>
-      )}
-    />
-  );
-}
-
 export function SidebarProject() {
   const {
+    projects,
     filter: { projectIds },
+    setFilterStates,
   } = useDashboardStore();
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const anchor = useComboboxAnchor();
 
-  useEffect(() => {
-    if (searchOpen) {
-      inputRef.current?.focus();
-    } else {
-      setSearchText("");
-    }
-  }, [searchOpen]);
+  const selectedProjects = projects.filter((p) => projectIds.includes(p.id));
+
+  const onValueChange = (values: ApiProjectResponse[]) => {
+    const newProjectIds = values.map((v) => v.id);
+    setFilterStates("projectIds", newProjectIds);
+  };
 
   return (
     <Fragment>
-      <SidebarGroup className="h-[50vh] flex flex-col">
-        {searchOpen ? (
-          <div className="flex items-center gap-1 px-2 h-7 mb-2">
-            <InputGroup className="h-7">
-              <InputGroupInput
-                placeholder="Search projects..."
-                ref={inputRef}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="py-0 h-7"
-              />
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-            </InputGroup>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 shrink-0"
-              onClick={() => setSearchOpen(false)}
+      <SidebarGroup>
+        <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
+          Projects {projectIds.length > 0 ? `(${projectIds.length})` : ""}
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <Combobox
+              multiple
+              autoHighlight
+              items={projects}
+              onValueChange={onValueChange}
+              virtualized
+              value={selectedProjects}
             >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ) : (
-          <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
-            Projects {projectIds.length > 0 ? `(${projectIds.length})` : ""}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-auto size-6 shrink-0"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="size-4" />
-            </Button>
-          </SidebarGroupLabel>
-        )}
-        <SidebarGroupContent className="flex-1 min-h-0">
-          <SidebarMenu className="h-full">
-            <LoadingSkeleton />
-            <ProjectList searchText={searchText} />
+              <ComboboxChips ref={anchor} className="gap-1">
+                <ComboboxValue>
+                  {(values) => (
+                    <Fragment>
+                      {values.map((value: ApiProjectResponse) => (
+                        <ComboboxChip
+                          key={value.id}
+                          className="h-auto whitespace-pre-wrap p-1"
+                          removeClassName="w-6 h-6"
+                        >
+                          {value.name}
+                        </ComboboxChip>
+                      ))}
+                      <ComboboxChipsInput placeholder="Pick projects" />
+                    </Fragment>
+                  )}
+                </ComboboxValue>
+              </ComboboxChips>
+              <ComboboxContent anchor={anchor}>
+                <ComboboxEmpty render={<LoadingSkeleton />} />
+                <ComboboxList>
+                  {(item: ApiProjectResponse) => (
+                    <ComboboxItem key={item.id} value={item}>
+                      {item.name}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
