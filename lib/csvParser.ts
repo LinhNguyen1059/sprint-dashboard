@@ -4,9 +4,18 @@ import {
   Team,
   Member,
   ApiReportResponse,
+  MemberWithOverview,
+  Project,
+  Story,
+  Feature,
 } from "./types";
-import { formatValueToSlug } from "./utils";
-import { getMemberRole, getTestersNames } from "./teams";
+import { calculateMemberData, formatValueToSlug } from "./utils";
+import {
+  getDevelopers,
+  getMemberRole,
+  getMembers,
+  getTestersNames,
+} from "./teams";
 import { isValid } from "date-fns";
 
 /**
@@ -20,16 +29,11 @@ function calculateFeatureStatus({
   dueDate,
   closedDate,
   status,
-  tracker,
 }: {
   dueDate: string;
   closedDate: string;
   status: string;
-  tracker: string;
 }) {
-  if (tracker !== "Tasks" && tracker !== "Task_Scr") {
-    return FeatureStatus.NONE;
-  }
   if (status === "Closed") {
     return FeatureStatus.ONTIME;
   }
@@ -55,6 +59,236 @@ function calculateFeatureStatus({
 }
 
 /**
+ * Process issues within a project and calculate feature metrics
+ * @param projectIssues Array of issues within a project
+ * @returns Processed issues with feature metrics
+ */
+function processProjectIssues(projectIssues: CombinedIssue[]) {
+  // Group issues by parent task within this project
+  const issuesByParent: Record<number, CombinedIssue[]> = {};
+  projectIssues.forEach((issue) => {
+    const parentId = issue.parentTask;
+    if (parentId) {
+      if (!issuesByParent[parentId]) {
+        issuesByParent[parentId] = [];
+      }
+      issuesByParent[parentId].push(issue);
+    }
+  });
+
+  // Identify features (Epics) within this project
+  const features: Feature[] = projectIssues
+    .filter((issue) => issue.tracker === "Epic")
+    .map((epic) => {
+      return {
+        ...epic,
+        dueStatus: calculateFeatureStatus({
+          closedDate: epic.closed,
+          dueDate: epic.dueDate,
+          status: epic.status,
+        }),
+        slug: formatValueToSlug(epic.subject),
+        criticalBugs: 0,
+        highBugs: 0,
+        postReleaseBugs: 0,
+        stories: [],
+        others: [],
+      };
+    });
+
+  // Identify stories and other issues within this project
+  const stories: Story[] = projectIssues
+    .filter((issue) => issue.tracker === "Story")
+    .map((story) => {
+      // Get child issues for this story
+      const childIssues = issuesByParent[story.id] || [];
+
+      let criticalCount = 0;
+      let highCount = 0;
+      let postReleaseCount = 0;
+
+      // Check if the issue is a bug with priority "Urgent" or "High"
+      childIssues.forEach((issue) => {
+        if (issue.tracker === "Bug") {
+          // Check if the issue has category "Post-Release Issue"
+          if (issue.issueCategories.includes("Post-Release Issue")) {
+            if (issue.priority === "Urgent") {
+              postReleaseCount += 1;
+            } else if (issue.priority === "Immediate") {
+              postReleaseCount += 1;
+            }
+            return;
+          }
+
+          if (issue.priority === "Urgent") {
+            criticalCount += 1;
+          } else if (issue.priority === "Immediate") {
+            criticalCount += 1;
+          } else if (issue.priority === "High") {
+            highCount += 1;
+          }
+        }
+      });
+
+      return {
+        ...story,
+        name: story.subject,
+        timeSpent: story.totalSpentTime,
+        parent: story.parentTask || 0,
+        issues: childIssues,
+        criticalBugs: criticalCount,
+        highBugs: highCount,
+        postReleaseBugs: postReleaseCount,
+      };
+    });
+
+  // Identify "other" tasks that belong to epics but are not stories or epics themselves
+  const otherTasks: CombinedIssue[] = projectIssues.filter((issue) => {
+    return issue.tracker !== "Epic" && issue.tracker !== "Story";
+  });
+
+  // Associate stories with their features and aggregate counts
+  stories.forEach((story) => {
+    const feature = features.find((f) => f.id === story.parent);
+    if (feature) {
+      // Add the story to the feature
+      feature.stories.push(story);
+
+      // Aggregate bug counts from the story to the feature
+      feature.criticalBugs += story.criticalBugs || 0;
+      feature.highBugs += story.highBugs || 0;
+      feature.postReleaseBugs += story.postReleaseBugs || 0;
+    }
+  });
+
+  // Associate "other" tasks with their features
+  otherTasks.forEach((task) => {
+    const feature = features.find((f) => f.id === task.parentTask);
+    if (feature) {
+      feature.others.push(task);
+
+      if (task.tracker === "Bug") {
+        // Check if the issue has category "Post-Release Issue"
+        if (task.issueCategories.includes("Post-Release Issue")) {
+          if (task.priority === "Urgent") {
+            feature.postReleaseBugs += 1;
+          } else if (task.priority === "Immediate") {
+            feature.postReleaseBugs += 1;
+          }
+          return;
+        }
+
+        if (task.priority === "Urgent") {
+          feature.criticalBugs += 1;
+        } else if (task.priority === "Immediate") {
+          feature.criticalBugs += 1;
+        } else if (task.priority === "High") {
+          feature.highBugs += 1;
+        }
+      }
+    }
+  });
+
+  return { features, stories, otherTasks };
+}
+
+/**
+ * Calculate members in a project
+ * @param issues Array of issues within a project
+ * @returns Members in the project
+ */
+/**
+ * Calculate members in a project based on issue assignees
+ * @param issues Array of issues within a project
+ * @returns Object containing members and their counts
+ */
+function calculateMembersInProject(issues: CombinedIssue[]) {
+  const uniqueAssignees = new Set<string>();
+  issues.forEach((issue) => {
+    if (
+      (issue.assignee && issue.assignee.trim() !== "") ||
+      (issue.doneBy && issue.doneBy.trim() !== "")
+    ) {
+      const assigneeNames = issue.assignee
+        .split(",")
+        .map((name) => name.trim());
+      assigneeNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          uniqueAssignees.add(name);
+        }
+      });
+
+      const doneByNames = issue.doneBy.split("; ").map((name) => name.trim());
+      doneByNames.forEach((name) => {
+        if (name && name.trim() !== "") {
+          uniqueAssignees.add(name);
+        }
+      });
+    }
+  });
+  const allMembers = getMembers();
+  const developers = getDevelopers();
+  const members = allMembers.filter((member) =>
+    uniqueAssignees.has(member.name),
+  );
+  const totalMembers = members.length || 0;
+  const totalDevs = developers.filter((dev) =>
+    uniqueAssignees.has(dev.name),
+  ).length;
+
+  return {
+    members,
+    totalMembers,
+    totalDevs,
+  };
+}
+
+/**
+ * Calculate projects from combined issues data
+ * @param issues Array of combined issues with project info
+ * @returns Array of projects grouped by project name
+ */
+export function calculateProjects(issues: CombinedIssue[]): Project[] {
+  // Group issues by project
+  const issuesByProject: Record<string, CombinedIssue[]> = {};
+  issues.forEach((issue) => {
+    const projectName = issue.projectName;
+    if (!issuesByProject[projectName]) {
+      issuesByProject[projectName] = [];
+    }
+    issuesByProject[projectName].push(issue);
+  });
+
+  // Process each project
+  const projects: Project[] = [];
+  for (const projectName in issuesByProject) {
+    const projectIssues = issuesByProject[projectName];
+    const projectSlug = formatValueToSlug(projectName);
+
+    // Count unique members (assignees) in this project
+    const { totalMembers, totalDevs } =
+      calculateMembersInProject(projectIssues);
+
+    // Process issues to extract features, stories and other tasks
+    const { features } = processProjectIssues(projectIssues);
+
+    // Create the project structure
+    const project: Project = {
+      name: projectName,
+      slug: projectSlug,
+      totalItems: projectIssues.length,
+      totalMembers: totalMembers,
+      totalDevs: totalDevs,
+      features: features,
+    };
+
+    projects.push(project);
+  }
+
+  return projects;
+}
+
+/**
  * Calculate members from combined issues data
  * @param issues Array of combined issues with project info
  * @param teams Array of teams with their members
@@ -63,7 +297,7 @@ function calculateFeatureStatus({
 export function calculateMembers(
   issues: CombinedIssue[],
   teams: Team[],
-): Member[] {
+): MemberWithOverview[] {
   // Create a set of valid member names from teams for quick lookup
   const validMemberNames = new Set<string>();
   teams.forEach((team) => {
@@ -115,9 +349,9 @@ export function calculateMembers(
       });
     }
 
-    // Process doneBy (could be multiple names separated by commas)
+    // Process doneBy (could be multiple names separated by semicolons)
     if (issue.doneBy && issue.doneBy.trim() !== "") {
-      const doneByNames = issue.doneBy.split(",").map((name) => name.trim());
+      const doneByNames = issue.doneBy.split("; ").map((name) => name.trim());
 
       doneByNames.forEach((name) => {
         if (name && name.trim() !== "") {
@@ -218,8 +452,15 @@ export function calculateMembers(
     }
   });
 
-  // Convert the map to an array
-  return Object.values(memberMap);
+  const memberData = Object.values(memberMap);
+  const overviewData = memberData.map((member) => {
+    return {
+      ...member,
+      ...calculateMemberData(member.issues, member.name),
+    };
+  });
+
+  return overviewData;
 }
 
 function isValidDate(dateStr: string): boolean {
@@ -257,7 +498,10 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       estimatedTime: row["estimatedTime"] || 0,
       totalEstimatedTime: row["totalEstimatedTime"] || 0,
       spentTime: row["spentTime"] || 0,
-      totalSpentTime: row["totalSpentTime"] || 0,
+      totalSpentTime:
+        row["totalSpentTime"] && typeof row["totalSpentTime"] === "number"
+          ? row["totalSpentTime"] / 100
+          : 0,
       percentDone: row["percentDone"] || 0,
       created: isValidDate(row["created"]) ? row["created"] : "",
       closed: isValidDate(row["closed"]) ? row["closed"] : "",
@@ -276,7 +520,6 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
         closedDate: row["closed"],
         dueDate: row["dueDate"],
         status: row["status"],
-        tracker: row["tracker"],
       }),
       triggeredBy: row["triggeredBy"],
       isWithoutSubtasks: true, // Default to true, will be calculated later

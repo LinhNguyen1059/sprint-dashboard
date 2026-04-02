@@ -263,6 +263,17 @@ export const columns: ColumnDef<Story | CombinedIssue>[] = [
     },
   },
   {
+    id: "isPostReleaseBug",
+    filterFn: (row, _id, isChecked: boolean) => {
+      if (!isChecked) return true;
+      const isBug = row.original.tracker === "Bug";
+      const categories = row.original.issueCategories
+        ? row.original.issueCategories.split("; ").map((c) => c.trim())
+        : [];
+      return isBug && categories.includes("Post-release Issue");
+    },
+  },
+  {
     accessorKey: "triggeredBy",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["triggeredBy"]} />

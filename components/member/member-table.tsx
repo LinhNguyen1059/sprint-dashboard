@@ -49,10 +49,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useDashboardStore } from "@/stores/dashboardStore";
-
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { columns, visibleColumns } from "./member.utils";
 import { MultiSelectFilter } from "../MultiSelectFilter";

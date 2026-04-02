@@ -7,18 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useMemberData } from "@/hooks/use-member-data";
 
-export interface IssueOverviewData {
-  completion: number;
-  inprogress: number;
-  overdueTasks: number;
-  totalCreatedBugs: number;
-  totalFixedBugs: number;
-  totalSpentTime: number;
-  totalFoundBugs: number;
-  totalConfirmedBugs: number;
-}
-
-export interface IssueOverviewActions {
+export interface MemberIssueOverviewActions {
   completionRateClick?: () => void;
   inProgressClick?: () => void;
   overdueClick?: () => void;
@@ -28,15 +17,15 @@ export interface IssueOverviewActions {
   totalConfirmedBugsClick?: () => void;
 }
 
-interface IssueOverviewProps {
-  actions: IssueOverviewActions;
+interface MemberIssueOverviewProps {
+  actions: MemberIssueOverviewActions;
 }
 
-export function IssueOverview({ actions }: IssueOverviewProps) {
+export function MemberIssueOverview({ actions }: MemberIssueOverviewProps) {
   const params = useParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
-  const { isTesterMember, overviewData } = useMemberData(slug as string);
+  const { isTesterMember, memberData } = useMemberData(slug as string);
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -52,7 +41,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent className="px-4">
-          <div className="text-2xl font-bold">{overviewData.completion}%</div>
+          <div className="text-2xl font-bold">{memberData?.completion}%</div>
         </CardContent>
       </Card>
 
@@ -70,7 +59,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
           <Play className="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent className="px-4">
-          <div className="text-2xl font-bold">{overviewData.inprogress}%</div>
+          <div className="text-2xl font-bold">{memberData?.inprogress}%</div>
         </CardContent>
       </Card>
 
@@ -89,7 +78,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
         </CardHeader>
         <CardContent className="px-4">
           <div className="text-2xl font-bold text-red-500">
-            {overviewData.overdueTasks}
+            {memberData?.overdueTasks}
           </div>
         </CardContent>
       </Card>
@@ -111,7 +100,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
             </CardHeader>
             <CardContent className="px-4">
               <div className="text-2xl font-bold text-red-500">
-                {overviewData.totalFoundBugs}
+                {memberData?.totalFoundBugs}
               </div>
             </CardContent>
           </Card>
@@ -130,7 +119,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
             </CardHeader>
             <CardContent className="px-4">
               <div className="text-2xl font-bold text-orange-500">
-                {overviewData.totalConfirmedBugs}
+                {memberData?.totalConfirmedBugs}
               </div>
             </CardContent>
           </Card>
@@ -152,7 +141,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
             </CardHeader>
             <CardContent className="px-4">
               <div className="text-2xl font-bold text-red-500">
-                {overviewData.totalCreatedBugs}
+                {memberData?.totalCreatedBugs}
               </div>
             </CardContent>
           </Card>
@@ -171,7 +160,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
             </CardHeader>
             <CardContent className="px-4">
               <div className="text-2xl font-bold text-orange-500">
-                {overviewData.totalFixedBugs}
+                {memberData?.totalFixedBugs}
               </div>
             </CardContent>
           </Card>
@@ -186,9 +175,7 @@ export function IssueOverview({ actions }: IssueOverviewProps) {
           <Clock className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="px-4">
-          <div className="text-2xl font-bold">
-            {overviewData.totalSpentTime}
-          </div>
+          <div className="text-2xl font-bold">{memberData?.totalSpentTime}</div>
         </CardContent>
       </Card>
     </div>

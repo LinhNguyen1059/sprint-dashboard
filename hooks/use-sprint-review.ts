@@ -143,7 +143,7 @@ export function useSprintReview(): SprintReviewData {
       (i) =>
         i.tracker === "Bug" &&
         i.issueCategories
-          ?.split(",")
+          ?.split("; ")
           .map((c) => c.trim())
           .includes("Post-Release Issue"),
     ).length;

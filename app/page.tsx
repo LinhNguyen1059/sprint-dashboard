@@ -1,7 +1,7 @@
 "use client";
 
 import { LoginForm } from "@/components/LoginForm";
-import { Member } from "@/components/member";
+import { Project } from "@/components/project";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
@@ -9,5 +9,5 @@ export default function Home() {
 
   if (isAuthChecking) return null;
 
-  return authenticated ? <Member /> : <LoginForm />;
+  return authenticated ? <Project /> : <LoginForm />;
 }

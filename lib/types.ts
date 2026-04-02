@@ -87,6 +87,8 @@ export interface Member {
   projects: string[];
 }
 
+export type MemberWithOverview = Member & IssueOverviewData;
+
 export enum FeatureStatus {
   NONE = 0,
   INPROGRESS = 1,
@@ -218,4 +220,14 @@ export interface ApiReportResponse {
   private: string;
   storyPoints: string;
   sprint: string;
+}
+export interface IssueOverviewData {
+  completion: number;
+  inprogress: number;
+  overdueTasks: number;
+  totalCreatedBugs: number;
+  totalFixedBugs: number;
+  totalSpentTime: number;
+  totalFoundBugs: number;
+  totalConfirmedBugs: number;
 }

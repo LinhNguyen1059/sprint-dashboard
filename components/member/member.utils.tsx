@@ -1,19 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Column, ColumnDef, Table } from "@tanstack/react-table";
+import { Column, ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { CombinedIssue, FeatureStatus, Member } from "@/lib/types";
-import {
-  countBugsByPriority,
-  cn,
-  countBugsSupportedByMember,
-} from "@/lib/utils";
+import { MemberWithOverview } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { MEMBER_ROLE } from "@/lib/teams";
 
 export const visibleColumns = {
@@ -27,31 +23,13 @@ export const visibleColumns = {
   projects: "Projects",
 };
 
-const getIssuesByProjects = (table: Table<Member>, issues: CombinedIssue[]) => {
-  const projectFilterValue = table.getColumn("projects")?.getFilterValue();
-  const selectedProjects = Array.isArray(projectFilterValue)
-    ? projectFilterValue
-    : projectFilterValue
-      ? [projectFilterValue]
-      : [];
-
-  let filteredIssues = issues;
-  if (selectedProjects.length > 0) {
-    filteredIssues = issues.filter((issue) =>
-      selectedProjects.includes(issue.projectName),
-    );
-  }
-
-  return filteredIssues;
-};
-
 // Define a reusable component for sortable headers
 const SortableHeader = ({
   column,
   title,
   className = "",
 }: {
-  column: Column<Member>;
+  column: Column<MemberWithOverview>;
   title: string;
   className?: string;
 }) => {
@@ -74,7 +52,7 @@ const SortableHeader = ({
 };
 
 // Define columns with clear, readable structure
-export const columns: ColumnDef<Member>[] = [
+export const columns: ColumnDef<MemberWithOverview>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => <SortableHeader column={column} title="Name" />,
@@ -119,123 +97,62 @@ export const columns: ColumnDef<Member>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "ontimePercent",
-    header: () => <div className="text-right">% Tasks On Time</div>,
-    cell: ({ row, table }) => {
-      const filteredIssues = getIssuesByProjects(table, row.original.issues);
-
-      const ontimeCount = filteredIssues.filter(
-        (issue) =>
-          (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
-          issue.dueStatus === FeatureStatus.ONTIME,
-      ).length;
-      const totalCount = filteredIssues.length;
-      const percent =
-        totalCount > 0 ? Math.round((ontimeCount / totalCount) * 100) : 0;
-
-      return <div className="text-right">{percent}%</div>;
+    accessorKey: "completion",
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        title="Completion rate"
+        className="w-full justify-end"
+      />
+    ),
+    cell: ({ row }) => {
+      return <div className="text-right">{row.original.completion}%</div>;
     },
     enableHiding: false,
   },
   {
-    accessorKey: "timeSpent",
+    accessorKey: "inprogress",
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        title="Time spent"
+        title="In-progress rate"
         className="w-full justify-end"
       />
     ),
-    cell: ({ row, table }) => {
-      const filteredIssues = getIssuesByProjects(table, row.original.issues);
-
-      const timeSpent = filteredIssues.reduce((acc, issue) => {
-        acc += issue.spentTime;
-        return acc;
-      }, 0);
-
+    cell: ({ row }) => {
+      return <div className="text-right">{row.original.inprogress}%</div>;
+    },
+    enableHiding: false,
+  },
+  {
+    accessorKey: "overdueTasks",
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        title="Overdue tasks"
+        className="w-full justify-end"
+      />
+    ),
+    cell: ({ row }) => {
+      return <div className="text-right">{row.original.overdueTasks}</div>;
+    },
+    enableHiding: false,
+  },
+  {
+    accessorKey: "totalSpentTime",
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        title="Spent time"
+        className="w-full justify-end"
+      />
+    ),
+    cell: ({ row }) => {
       return (
-        <div className="text-right">{parseFloat(timeSpent.toFixed(2))} hrs</div>
+        <div className="text-right">{row.original.totalSpentTime} hrs</div>
       );
     },
-  },
-  {
-    accessorKey: "criticalBugs",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="Critical bugs"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row, table }) => {
-      const filteredIssues = getIssuesByProjects(table, row.original.issues);
-
-      const criticalBugs = countBugsByPriority({
-        member: row.original.name,
-        issues: filteredIssues,
-        priorities: ["Urgent", "Immediate"],
-      });
-
-      return <div className="text-right">{criticalBugs}</div>;
-    },
-  },
-  {
-    accessorKey: "highBugs",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="High bugs"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row, table }) => {
-      const filteredIssues = getIssuesByProjects(table, row.original.issues);
-
-      const highBugs = countBugsByPriority({
-        member: row.original.name,
-        issues: filteredIssues,
-        priorities: ["High"],
-      });
-
-      return <div className="text-right">{highBugs}</div>;
-    },
-  },
-  {
-    accessorKey: "supported",
-    header: () => <div className="text-right">Supported</div>,
-    cell: ({ row, table }) => {
-      const filteredIssues = getIssuesByProjects(table, row.original.issues);
-
-      const supportedBugs = countBugsSupportedByMember({
-        member: row.original.name,
-        issues: filteredIssues,
-      });
-
-      return <div className="text-right">{supportedBugs}</div>;
-    },
-  },
-  {
-    accessorKey: "postReleaseBugs",
-    header: ({ column }) => (
-      <SortableHeader
-        column={column}
-        title="Post-Release bugs"
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row, table }) => {
-      const filteredIssues = getIssuesByProjects(table, row.original.issues);
-
-      const postReleaseBugs = countBugsByPriority({
-        member: row.original.name,
-        issues: filteredIssues,
-        priorities: ["Urgent", "Immediate"],
-        isPostRelease: true,
-      });
-
-      return <div className="text-right">{postReleaseBugs}</div>;
-    },
+    enableHiding: false,
   },
   {
     accessorKey: "projects",

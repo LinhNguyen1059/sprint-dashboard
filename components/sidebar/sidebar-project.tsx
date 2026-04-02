@@ -86,14 +86,14 @@ export function SidebarProject() {
               virtualized
               value={selectedProjects}
             >
-              <ComboboxChips ref={anchor} className="gap-1">
+              <ComboboxChips ref={anchor} className="gap-1 bg-background">
                 <ComboboxValue>
                   {(values) => (
                     <Fragment>
                       {values.map((value: ApiProjectResponse) => (
                         <ComboboxChip
                           key={value.id}
-                          className="h-auto whitespace-pre-wrap p-1"
+                          className="h-auto whitespace-pre-wrap p-1 bg-primary/10 data-[state=on]:bg-primary/20 text-primary text-xs"
                           removeClassName="w-6 h-6"
                         >
                           {value.name}

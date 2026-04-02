@@ -1,6 +1,13 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CombinedIssue, FeatureStatus, Issue } from "./types";
+import {
+  CombinedIssue,
+  Feature,
+  FeatureStatus,
+  Issue,
+  IssueOverviewData,
+  Story,
+} from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
 import { getDevelopers, isTester } from "./teams";
 
@@ -198,7 +205,7 @@ export const countBugsByPriority = ({
     const isTesterMember = isTester(member);
 
     const categories = issue.issueCategories
-      .split(",")
+      .split("; ")
       .map((category) => category.trim())
       .filter(Boolean);
 
@@ -273,19 +280,121 @@ export const calculateOverviewRate = (data: Issue[], member: string) => {
       issue.status === "Confirmed" ||
       issue.status === "In Progress",
   );
-  const closedIssues = issues.filter((issue) => issue.status === "Closed");
+  const closedIssues = issues.filter(
+    (issue) => issue.status === "Closed" && issue.doneBy.includes(member),
+  );
   const assignedIssues = issues.filter(
     (issue) => issue.assignee === member || issue.doneBy.includes(member),
   );
 
   const completion =
     assignedIssues.length > 0
-      ? Math.round((closedIssues.length / assignedIssues.length) * 100)
+      ? Math.min(
+          Math.round((closedIssues.length / assignedIssues.length) * 100),
+          100,
+        )
       : 0;
   const inprogress =
     assignedIssues.length > 0
-      ? Math.round((openIssues.length / assignedIssues.length) * 100)
+      ? Math.min(
+          Math.round((openIssues.length / assignedIssues.length) * 100),
+          100,
+        )
       : 0;
 
   return { completion, inprogress };
+};
+
+const EMPTY_OVERVIEW: IssueOverviewData = {
+  completion: 0,
+  inprogress: 0,
+  overdueTasks: 0,
+  totalCreatedBugs: 0,
+  totalFixedBugs: 0,
+  totalSpentTime: 0,
+  totalFoundBugs: 0,
+  totalConfirmedBugs: 0,
+};
+export const calculateMemberData = (
+  issues: CombinedIssue[],
+  member: string,
+) => {
+  if (!issues?.length) return EMPTY_OVERVIEW;
+
+  const { completion, inprogress } = calculateOverviewRate(issues, member);
+
+  const totalCreatedBugs =
+    countBugsByPriority({ member, issues, priorities: ["High"] }) +
+    countBugsByPriority({
+      member,
+      issues,
+      priorities: ["Urgent", "Immediate"],
+    });
+
+  const overdueTasks = issues.filter(
+    (item) =>
+      (item.tracker === "Tasks" || item.tracker === "Task_Scr") &&
+      item.dueStatus === FeatureStatus.LATE,
+  ).length;
+
+  const totalFixedBugs = issues.filter(
+    (issue) =>
+      issue.tracker === "Bug" &&
+      issue.status === "Closed" &&
+      (issue.assignee === member || issue.doneBy.includes(member)),
+  ).length;
+
+  const totalSpentTime = issues.reduce((total, issue) => {
+    if ("spentTime" in issue && typeof issue.spentTime === "number") {
+      return total + issue.spentTime;
+    }
+    return total;
+  }, 0);
+
+  const bugFound = issues.filter(
+    (issue) => issue.tracker === "Bug" && issue.author === member,
+  ).length;
+
+  const bugConfirmed = issues.filter(
+    (issue) => issue.tracker === "Bug" && issue.doneBy.includes(member),
+  ).length;
+
+  return {
+    completion,
+    inprogress,
+    overdueTasks,
+    totalCreatedBugs,
+    totalFixedBugs,
+    totalSpentTime: parseFloat(totalSpentTime.toFixed(2)),
+    totalFoundBugs: bugFound,
+    totalConfirmedBugs: bugConfirmed,
+  };
+};
+
+export const flattenedIssues = (features: Feature[]) => {
+  if (!features || features.length === 0) {
+    return [];
+  }
+
+  const allItems: Story[] = [];
+
+  features.forEach((feature) => {
+    feature.stories.forEach((story) => {
+      allItems.push(story);
+
+      story.issues.forEach((issue) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        allItems.push(issue);
+      });
+    });
+
+    feature.others.forEach((issue) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      allItems.push(issue);
+    });
+  });
+
+  return allItems;
 };
