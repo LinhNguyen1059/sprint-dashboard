@@ -37,7 +37,7 @@ export default function FeatureDetail() {
       return undefined;
     }
     return getFeatureBySlug(slug, feature);
-  }, [feature, getFeatureBySlug, slug]);
+  }, [feature, getFeatureBySlug, slug, project]);
 
   const featureIssues = useMemo(() => {
     if (!featureData) {
@@ -71,11 +71,11 @@ export default function FeatureDetail() {
 
   const completionRateClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
-    status: ["Closed"],
+    status: ["Closed", "Resolved", "Rejected"],
   });
   const inProgressClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
-    status: ["Waiting", "Confirmed", "In Progress"],
+    status: ["Waiting", "Confirmed", "In Progress", "Feedback", "Reopened"],
   });
   const overdueClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr"],

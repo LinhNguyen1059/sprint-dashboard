@@ -1,7 +1,6 @@
 "use client";
 
 import { Bug, Clock, Play, TrendingUp } from "lucide-react";
-import { useParams } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -26,19 +25,19 @@ export function ProjectIssueOverview({
   feature,
   actions,
 }: ProjectIssueOverviewProps) {
-  const params = useParams();
-  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const completionRate = useMemo(() => {
+    if (!feature) return 0;
+    const totalIssues = feature.issues.length;
+    if (totalIssues === 0) return 0;
+    return Math.min(Math.round((feature.completion / totalIssues) * 100), 100);
+  }, [feature]);
 
-  const overviewData = useMemo(() => {
-    return {
-      completion: 0,
-      inprogress: 0,
-      overdueTasks: 0,
-      criticalBugs: 0,
-      highBugs: 0,
-      postReleaseBugs: 0,
-    };
-  }, [slug]);
+  const inProgressRate = useMemo(() => {
+    if (!feature) return 0;
+    const totalIssues = feature.issues.length;
+    if (totalIssues === 0) return 0;
+    return Math.min(Math.round((feature.inProgress / totalIssues) * 100), 100);
+  }, [feature]);
 
   if (!feature) {
     return null;
@@ -58,7 +57,7 @@ export function ProjectIssueOverview({
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent className="px-4">
-          <div className="text-2xl font-bold">{overviewData.completion}%</div>
+          <div className="text-2xl font-bold">{completionRate}%</div>
         </CardContent>
       </Card>
 
@@ -76,7 +75,7 @@ export function ProjectIssueOverview({
           <Play className="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent className="px-4">
-          <div className="text-2xl font-bold">{overviewData.inprogress}%</div>
+          <div className="text-2xl font-bold">{inProgressRate}%</div>
         </CardContent>
       </Card>
 
@@ -95,7 +94,7 @@ export function ProjectIssueOverview({
         </CardHeader>
         <CardContent className="px-4">
           <div className="text-2xl font-bold text-red-500">
-            {overviewData.overdueTasks}
+            {feature.overdueTasks}
           </div>
         </CardContent>
       </Card>

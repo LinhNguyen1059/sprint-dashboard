@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CombinedIssue, Story } from "@/lib/types";
+import { CombinedIssue } from "@/lib/types";
 import {
   bugTrackerUrl,
   cn,
@@ -34,7 +34,7 @@ export const SortableHeader = ({
   title,
   className = "",
 }: {
-  column: Column<Story | CombinedIssue>;
+  column: Column<CombinedIssue>;
   title: string;
   className?: string;
 }) => {
@@ -57,7 +57,7 @@ export const SortableHeader = ({
 };
 
 // Define columns with clear, readable structure
-export const columns: ColumnDef<Story | CombinedIssue>[] = [
+export const columns: ColumnDef<CombinedIssue>[] = [
   {
     id: "id",
     header: () => null,

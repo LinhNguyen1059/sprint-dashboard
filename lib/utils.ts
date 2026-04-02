@@ -6,7 +6,6 @@ import {
   FeatureStatus,
   Issue,
   IssueOverviewData,
-  Story,
 } from "./types";
 import { CircleCheck, Loader, TimerOff } from "lucide-react";
 import { getDevelopers, isTester } from "./teams";
@@ -278,7 +277,9 @@ export const calculateOverviewRate = (data: Issue[], member: string) => {
     (issue) =>
       issue.status === "Waiting" ||
       issue.status === "Confirmed" ||
-      issue.status === "In Progress",
+      issue.status === "In Progress" ||
+      issue.status === "Feedback" ||
+      issue.status === "Reopened",
   );
   const closedIssues = issues.filter(
     (issue) => issue.status === "Closed" && issue.doneBy.includes(member),
@@ -372,29 +373,5 @@ export const calculateMemberData = (
 };
 
 export const flattenedIssues = (features: Feature[]) => {
-  if (!features || features.length === 0) {
-    return [];
-  }
-
-  const allItems: Story[] = [];
-
-  features.forEach((feature) => {
-    feature.stories.forEach((story) => {
-      allItems.push(story);
-
-      story.issues.forEach((issue) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        allItems.push(issue);
-      });
-    });
-
-    feature.others.forEach((issue) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      allItems.push(issue);
-    });
-  });
-
-  return allItems;
+  return features.flatMap((feature) => feature.issues);
 };

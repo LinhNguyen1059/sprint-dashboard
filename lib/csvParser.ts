@@ -6,7 +6,6 @@ import {
   ApiReportResponse,
   MemberWithOverview,
   Project,
-  Story,
   Feature,
 } from "./types";
 import { calculateMemberData, formatValueToSlug } from "./utils";
@@ -59,28 +58,46 @@ function calculateFeatureStatus({
 }
 
 /**
- * Process issues within a project and calculate feature metrics
- * @param projectIssues Array of issues within a project
- * @returns Processed issues with feature metrics
+ * Count bug severity metrics for a single issue.
+ * Returns zeros for non-bug trackers.
+ */
+function countBugs(issue: CombinedIssue): {
+  critical: number;
+  high: number;
+  postRelease: number;
+} {
+  if (issue.tracker !== "Bug") return { critical: 0, high: 0, postRelease: 0 };
+
+  const isUrgentOrImmediate =
+    issue.priority === "Urgent" || issue.priority === "Immediate";
+
+  if (issue.issueCategories.includes("Post-Release Issue")) {
+    return { critical: 0, high: 0, postRelease: isUrgentOrImmediate ? 1 : 0 };
+  }
+
+  if (isUrgentOrImmediate) return { critical: 1, high: 0, postRelease: 0 };
+  if (issue.priority === "High")
+    return { critical: 0, high: 1, postRelease: 0 };
+
+  return { critical: 0, high: 0, postRelease: 0 };
+}
+
+/**
+ * Process issues within a project and produce a feature-centric data model.
+ *
+ * Hierarchy: Epic (Feature) → Story → leaf issues (Task | Bug | Suggestion)
+ * Bugs may also belong directly to a Feature (without a Story).
+ *
+ * All leaf issues are flattened into `feature.issues`; Stories are
+ * intermediate routing nodes and do not appear in the output.
  */
 function processProjectIssues(projectIssues: CombinedIssue[]) {
-  // Group issues by parent task within this project
-  const issuesByParent: Record<number, CombinedIssue[]> = {};
-  projectIssues.forEach((issue) => {
-    const parentId = issue.parentTask;
-    if (parentId) {
-      if (!issuesByParent[parentId]) {
-        issuesByParent[parentId] = [];
-      }
-      issuesByParent[parentId].push(issue);
-    }
-  });
-
-  // Identify features (Epics) within this project
-  const features: Feature[] = projectIssues
+  // Build a Map of feature id → Feature for O(1) lookups
+  const featureById = new Map<number, Feature>();
+  projectIssues
     .filter((issue) => issue.tracker === "Epic")
-    .map((epic) => {
-      return {
+    .forEach((epic) => {
+      featureById.set(epic.id, {
         ...epic,
         dueStatus: calculateFeatureStatus({
           closedDate: epic.closed,
@@ -91,105 +108,69 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
         criticalBugs: 0,
         highBugs: 0,
         postReleaseBugs: 0,
-        stories: [],
-        others: [],
-      };
-    });
-
-  // Identify stories and other issues within this project
-  const stories: Story[] = projectIssues
-    .filter((issue) => issue.tracker === "Story")
-    .map((story) => {
-      // Get child issues for this story
-      const childIssues = issuesByParent[story.id] || [];
-
-      let criticalCount = 0;
-      let highCount = 0;
-      let postReleaseCount = 0;
-
-      // Check if the issue is a bug with priority "Urgent" or "High"
-      childIssues.forEach((issue) => {
-        if (issue.tracker === "Bug") {
-          // Check if the issue has category "Post-Release Issue"
-          if (issue.issueCategories.includes("Post-Release Issue")) {
-            if (issue.priority === "Urgent") {
-              postReleaseCount += 1;
-            } else if (issue.priority === "Immediate") {
-              postReleaseCount += 1;
-            }
-            return;
-          }
-
-          if (issue.priority === "Urgent") {
-            criticalCount += 1;
-          } else if (issue.priority === "Immediate") {
-            criticalCount += 1;
-          } else if (issue.priority === "High") {
-            highCount += 1;
-          }
-        }
+        completion: 0,
+        inProgress: 0,
+        overdueTasks: 0,
+        issues: [],
       });
-
-      return {
-        ...story,
-        name: story.subject,
-        timeSpent: story.totalSpentTime,
-        parent: story.parentTask || 0,
-        issues: childIssues,
-        criticalBugs: criticalCount,
-        highBugs: highCount,
-        postReleaseBugs: postReleaseCount,
-      };
     });
 
-  // Identify "other" tasks that belong to epics but are not stories or epics themselves
-  const otherTasks: CombinedIssue[] = projectIssues.filter((issue) => {
-    return issue.tracker !== "Epic" && issue.tracker !== "Story";
-  });
-
-  // Associate stories with their features and aggregate counts
-  stories.forEach((story) => {
-    const feature = features.find((f) => f.id === story.parent);
-    if (feature) {
-      // Add the story to the feature
-      feature.stories.push(story);
-
-      // Aggregate bug counts from the story to the feature
-      feature.criticalBugs += story.criticalBugs || 0;
-      feature.highBugs += story.highBugs || 0;
-      feature.postReleaseBugs += story.postReleaseBugs || 0;
-    }
-  });
-
-  // Associate "other" tasks with their features
-  otherTasks.forEach((task) => {
-    const feature = features.find((f) => f.id === task.parentTask);
-    if (feature) {
-      feature.others.push(task);
-
-      if (task.tracker === "Bug") {
-        // Check if the issue has category "Post-Release Issue"
-        if (task.issueCategories.includes("Post-Release Issue")) {
-          if (task.priority === "Urgent") {
-            feature.postReleaseBugs += 1;
-          } else if (task.priority === "Immediate") {
-            feature.postReleaseBugs += 1;
-          }
-          return;
-        }
-
-        if (task.priority === "Urgent") {
-          feature.criticalBugs += 1;
-        } else if (task.priority === "Immediate") {
-          feature.criticalBugs += 1;
-        } else if (task.priority === "High") {
-          feature.highBugs += 1;
-        }
+  // Build a Map of story id → parent feature id for O(1) story resolution
+  const storyFeatureId = new Map<number, number>();
+  projectIssues
+    .filter((issue) => issue.tracker === "Story")
+    .forEach((story) => {
+      if (story.parentTask && featureById.has(story.parentTask)) {
+        storyFeatureId.set(story.id, story.parentTask);
       }
+    });
+
+  // Route each leaf issue to its feature and accumulate bug counts
+  projectIssues.forEach((issue) => {
+    if (issue.tracker === "Epic" || issue.tracker === "Story") return;
+    if (!issue.parentTask) return;
+
+    // Resolve: direct child of feature OR grandchild via story
+    const feature =
+      featureById.get(issue.parentTask) ??
+      featureById.get(storyFeatureId.get(issue.parentTask) ?? -1);
+
+    if (!feature) return;
+
+    feature.issues.push(issue);
+
+    const { critical, high, postRelease } = countBugs(issue);
+    feature.criticalBugs += critical;
+    feature.highBugs += high;
+    feature.postReleaseBugs += postRelease;
+
+    if (
+      (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
+      issue.dueStatus === FeatureStatus.LATE
+    ) {
+      feature.overdueTasks += 1;
+    }
+
+    if (
+      issue.status === "Closed" ||
+      issue.status === "Resolved" ||
+      issue.status === "Rejected"
+    ) {
+      feature.completion += 1;
+    }
+
+    if (
+      issue.status === "Waiting" ||
+      issue.status === "Confirmed" ||
+      issue.status === "In Progress" ||
+      issue.status === "Feedback" ||
+      issue.status === "Reopened"
+    ) {
+      feature.inProgress += 1;
     }
   });
 
-  return { features, stories, otherTasks };
+  return { features: Array.from(featureById.values()) };
 }
 
 /**

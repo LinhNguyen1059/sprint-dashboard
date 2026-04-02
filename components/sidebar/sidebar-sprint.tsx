@@ -113,7 +113,7 @@ export function SidebarSprint() {
   return (
     <Fragment>
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
+        <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-0 gap-3 p-0">
           Sprints{" "}
           {sprintIds && sprintIds.length > 0 ? `(${sprintIds.length})` : ""}
         </SidebarGroupLabel>

@@ -54,7 +54,7 @@ export function SidebarDateRange() {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
+      <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-0 gap-3 p-0">
         Date Range
       </SidebarGroupLabel>
       <SidebarGroupContent>

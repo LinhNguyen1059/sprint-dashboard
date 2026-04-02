@@ -44,23 +44,15 @@ export interface CombinedIssue extends Issue {
   dueStatus: number;
 }
 
-// Story now extends Issue, adding story-specific properties
-export interface Story extends CombinedIssue {
-  timeSpent: number;
-  parent: number;
-  issues: Issue[];
-  criticalBugs: number;
-  highBugs: number;
-  postReleaseBugs: number;
-}
-
 export interface Feature extends CombinedIssue {
   slug: string;
   criticalBugs: number;
   highBugs: number;
   postReleaseBugs: number;
-  stories: Story[];
-  others: Issue[];
+  completion: number;
+  inProgress: number;
+  overdueTasks: number;
+  issues: CombinedIssue[];
 }
 
 export interface Project {

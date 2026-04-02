@@ -73,10 +73,10 @@ export function SidebarProject() {
   return (
     <Fragment>
       <SidebarGroup>
-        <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-2 gap-3">
+        <SidebarGroupLabel className="w-full text-sm text-sidebar-foreground h-7 mb-0 gap-3 p-0">
           Projects {projectIds.length > 0 ? `(${projectIds.length})` : ""}
         </SidebarGroupLabel>
-        <SidebarGroupContent>
+        <SidebarGroupContent ref={anchor}>
           <SidebarMenu>
             <Combobox
               multiple
@@ -86,7 +86,7 @@ export function SidebarProject() {
               virtualized
               value={selectedProjects}
             >
-              <ComboboxChips ref={anchor} className="gap-1 bg-background">
+              <ComboboxChips className="gap-1 bg-background">
                 <ComboboxValue>
                   {(values) => (
                     <Fragment>
