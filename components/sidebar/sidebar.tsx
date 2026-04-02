@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { LayoutDashboardIcon } from "lucide-react";
+import Image from "next/image";
 
 import {
   Sidebar as SidebarUI,
@@ -21,6 +21,7 @@ import { SidebarDateRange } from "./sidebar-date-range";
 import { SidebarSprint } from "./sidebar-sprint";
 import { SidebarLogic } from "./sidebar.logic";
 import { SidebarApply } from "./sidebar-apply";
+import { SidebarLink } from "./sidebar-link";
 
 function AppSidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
   return (
@@ -29,13 +30,14 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <Link href="/" className="flex items-center gap-2">
-              <LayoutDashboardIcon className="!size-5" />
-              <span className="text-base font-semibold">Dashboard</span>
+              <Image src="/logo.png" alt="Logo" width={20} height={20} />
+              <span className="text-base font-semibold">Redmine Dashboard</span>
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="custom-scrollbar">
+        <SidebarLink />
         <SidebarProject />
         <SidebarSprint />
         <SidebarDateRange />

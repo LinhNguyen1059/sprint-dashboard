@@ -6,12 +6,14 @@ import {
   ApiProjectResponse,
   ApiReportResponse,
   CombinedIssue,
+  Feature,
   Filter,
-  Member,
+  MemberWithOverview,
+  Project,
   Sprint,
 } from "@/lib/types";
 import { apiFetch } from "@/lib/api-client";
-import { calculateMembers } from "@/lib/csvParser";
+import { calculateMembers, calculateProjects } from "@/lib/csvParser";
 import { TEAMS } from "@/lib/teams";
 
 interface DashboardState {
@@ -23,7 +25,8 @@ interface DashboardState {
   isSprintLoading: boolean;
   isLoading: boolean;
   reports: CombinedIssue[];
-  members: Member[];
+  members: MemberWithOverview[];
+  projectsData: Project[];
   setStates: (
     partial: Partial<
       Omit<
@@ -38,10 +41,15 @@ interface DashboardState {
   toggleSprintInFilter: (sprintId: number, value: boolean) => void;
   setFilterStates: (field: keyof Filter, value: Filter[keyof Filter]) => void;
   resetFilter: (field: keyof Filter) => void;
-  getMemberBySlug: (slug: string) => Member | undefined;
+  getMemberBySlug: (slug: string) => MemberWithOverview | undefined;
   checkIsAnyFilterApplied: () => boolean;
   checkIsAllFilterApplied: () => boolean;
   getReportData: () => void;
+  getProjectBySlug: (slug: string) => Project | undefined;
+  getFeatureBySlug: (
+    projectSlug: string,
+    featureSlug: string,
+  ) => Feature | undefined;
 }
 
 const initialDashboardState = {
@@ -59,6 +67,7 @@ const initialDashboardState = {
   isLoading: false,
   reports: [],
   members: [],
+  projectsData: [],
 };
 
 export const useDashboardStore = create<DashboardState>()(
@@ -174,6 +183,9 @@ export const useDashboardStore = create<DashboardState>()(
             `/api/v1/reports?${params.toString()}`,
           );
           if (data && Array.isArray(data.reports)) {
+            const projectsData = calculateProjects(
+              data.reports as unknown as CombinedIssue[],
+            );
             const members = calculateMembers(
               data.reports as unknown as CombinedIssue[],
               TEAMS,
@@ -181,6 +193,7 @@ export const useDashboardStore = create<DashboardState>()(
             set({
               reports: data.reports as unknown as CombinedIssue[],
               members,
+              projectsData,
             });
           }
         } catch (error) {
@@ -188,6 +201,12 @@ export const useDashboardStore = create<DashboardState>()(
         } finally {
           set({ isLoading: false });
         }
+      },
+      getProjectBySlug: (slug) =>
+        get().projectsData.find((project) => project.slug === slug),
+      getFeatureBySlug: (projectSlug, featureSlug) => {
+        const project = get().projectsData.find((p) => p.slug === projectSlug);
+        return project?.features.find((f) => f.slug === featureSlug);
       },
     }),
     {

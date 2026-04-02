@@ -44,23 +44,15 @@ export interface CombinedIssue extends Issue {
   dueStatus: number;
 }
 
-// Story now extends Issue, adding story-specific properties
-export interface Story extends CombinedIssue {
-  timeSpent: number;
-  parent: number;
-  issues: Issue[];
-  criticalBugs: number;
-  highBugs: number;
-  postReleaseBugs: number;
-}
-
 export interface Feature extends CombinedIssue {
   slug: string;
   criticalBugs: number;
   highBugs: number;
   postReleaseBugs: number;
-  stories: Story[];
-  others: Issue[];
+  completion: number;
+  inProgress: number;
+  overdueTasks: number;
+  issues: CombinedIssue[];
 }
 
 export interface Project {
@@ -86,6 +78,8 @@ export interface Member {
   role: string;
   projects: string[];
 }
+
+export type MemberWithOverview = Member & IssueOverviewData;
 
 export enum FeatureStatus {
   NONE = 0,
@@ -218,4 +212,14 @@ export interface ApiReportResponse {
   private: string;
   storyPoints: string;
   sprint: string;
+}
+export interface IssueOverviewData {
+  completion: number;
+  inprogress: number;
+  overdueTasks: number;
+  totalCreatedBugs: number;
+  totalFixedBugs: number;
+  totalSpentTime: number;
+  totalFoundBugs: number;
+  totalConfirmedBugs: number;
 }
