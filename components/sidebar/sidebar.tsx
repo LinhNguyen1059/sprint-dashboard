@@ -31,6 +31,7 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof SidebarUI>) {
           <SidebarMenuItem>
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Logo" width={20} height={20} />
+              <span className="text-base font-semibold">Redmine Dashboard</span>
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>
