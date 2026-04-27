@@ -18,6 +18,8 @@ export const excludedIssueCategories = [
   "Requirement Error",
   "Test Environment Error",
   "External Dependency Error",
+  "Not Bug",
+  "Post-Release Issue",
 ];
 
 export function formatValueToSlug(value: string) {
@@ -273,35 +275,18 @@ export const calculateOverviewRate = (data: Issue[], member: string) => {
       issue.tracker === "Bug",
   );
 
-  const openIssues = issues.filter(
-    (issue) =>
-      issue.status === "Waiting" ||
-      issue.status === "Confirmed" ||
-      issue.status === "In Progress" ||
-      issue.status === "Feedback" ||
-      issue.status === "Reopened",
-  );
-  const closedIssues = issues.filter(
-    (issue) => issue.status === "Closed" && issue.doneBy.includes(member),
-  );
   const assignedIssues = issues.filter(
     (issue) => issue.assignee === member || issue.doneBy.includes(member),
+  );
+  const closedIssues = assignedIssues.filter(
+    (issue) => issue.status === "Closed",
   );
 
   const completion =
     assignedIssues.length > 0
-      ? Math.min(
-          Math.round((closedIssues.length / assignedIssues.length) * 100),
-          100,
-        )
+      ? Math.round((closedIssues.length / assignedIssues.length) * 100)
       : 0;
-  const inprogress =
-    assignedIssues.length > 0
-      ? Math.min(
-          Math.round((openIssues.length / assignedIssues.length) * 100),
-          100,
-        )
-      : 0;
+  const inprogress = assignedIssues.length > 0 ? 100 - completion : 0;
 
   return { completion, inprogress };
 };
@@ -324,13 +309,11 @@ export const calculateMemberData = (
 
   const { completion, inprogress } = calculateOverviewRate(issues, member);
 
-  const totalCreatedBugs =
-    countBugsByPriority({ member, issues, priorities: ["High"] }) +
-    countBugsByPriority({
-      member,
-      issues,
-      priorities: ["Urgent", "Immediate"],
-    });
+  const totalCreatedBugs = countBugsByPriority({
+    member,
+    issues,
+    priorities: ["High", "Urgent", "Immediate"],
+  });
 
   const overdueTasks = issues.filter(
     (item) =>
@@ -347,6 +330,16 @@ export const calculateMemberData = (
 
   const totalSpentTime = issues.reduce((total, issue) => {
     if ("spentTime" in issue && typeof issue.spentTime === "number") {
+      // Only count spentTime from rows where this member actually logged the time
+      const isInUser =
+        issue.user &&
+        issue.user
+          .split(",")
+          .map((n) => n.trim())
+          .includes(member);
+      if (!isInUser) {
+        return total;
+      }
       return total + issue.spentTime;
     }
     return total;

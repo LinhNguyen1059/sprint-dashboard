@@ -28,8 +28,9 @@ export function useIssueTable(issues: CombinedIssue[]) {
       updated: false,
       lastUpdatedBy: false,
       dueStatus: false,
-      // Virtual filter-only column — never rendered
-      assigneeOrDoneBy: false,
+      // Virtual filter-only columns — never rendered
+      excludeStatuses: false,
+      triggeredByMember: false,
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],

@@ -179,7 +179,7 @@ export const columns: ColumnDef<CombinedIssue>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-right">{Math.round(row.original.spentTime)} hrs</div>
+      <div className="text-right">{row.original.spentTime.toFixed(1)} hrs</div>
     ),
   },
   {
@@ -238,11 +238,10 @@ export const columns: ColumnDef<CombinedIssue>[] = [
    * Columns dropdown (which gates on `typeof column.accessorFn !== "undefined"`).
    */
   {
-    id: "assigneeOrDoneBy",
+    id: "user",
     filterFn: (row, _id, member: string) => {
       if (!member) return true;
-      const { assignee, doneBy } = row.original;
-      return assignee === member || doneBy?.includes(member);
+      return row.original.user === member;
     },
   },
   /**
@@ -256,10 +255,38 @@ export const columns: ColumnDef<CombinedIssue>[] = [
       if (!excluded || excluded.length === 0) return true;
       const raw = row.original.issueCategories ?? "";
       const rowCategories = raw
-        .split(",")
+        .split(/[,;]+/)
         .map((c: string) => c.trim())
         .filter(Boolean);
       return !rowCategories.some((cat: string) => excluded.includes(cat));
+    },
+  },
+  /**
+   * Virtual filter-only column.
+   * Excludes rows whose status is in the provided list.
+   */
+  {
+    id: "excludeStatuses",
+    filterFn: (row, _id, excluded: string[]) => {
+      if (!excluded || excluded.length === 0) return true;
+      return !excluded.includes(row.original.status);
+    },
+  },
+  /**
+   * Virtual filter-only column.
+   * Includes rows where triggeredBy is empty/unset OR includes the given member name.
+   * Mirrors the triggeredBy guard in countBugsByPriority.
+   */
+  {
+    id: "triggeredByMember",
+    filterFn: (row, _id, member: string) => {
+      if (!member) return true;
+      const { triggeredBy } = row.original;
+      return (
+        !triggeredBy ||
+        triggeredBy.trim() === "" ||
+        triggeredBy.includes(member)
+      );
     },
   },
   {

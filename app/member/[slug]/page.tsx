@@ -46,12 +46,12 @@ export default function MemberPage() {
   const completionRateClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
     status: ["Closed"],
-    assigneeOrDoneBy: memberData?.name,
+    user: memberData?.name,
   });
   const inProgressClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
     status: ["Waiting", "Confirmed", "In Progress"],
-    assigneeOrDoneBy: memberData?.name,
+    user: memberData?.name,
   });
   const overdueClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr"],
@@ -61,12 +61,13 @@ export default function MemberPage() {
     tracker: ["Bug"],
     priority: ["High", "Urgent", "Immediate"],
     excludeIssueCategories: excludedIssueCategories,
+    excludeStatuses: ["Rejected"],
+    triggeredByMember: memberData?.name,
   });
   const totalFixedBugsClick = applyOverviewFilter({
     tracker: ["Bug"],
     status: ["Closed"],
-    assigneeOrDoneBy: memberData?.name,
-    excludeIssueCategories: excludedIssueCategories,
+    user: memberData?.name,
   });
   const totalFoundBugsClick = applyOverviewFilter({
     tracker: ["Bug"],

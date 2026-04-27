@@ -289,75 +289,33 @@ export function calculateMembers(
     });
   });
 
-  validMemberNames.delete("Dung Tran");
-
   // Create a map of member names to their stats
   const memberMap: Record<string, Member> = {};
 
   // Collect all unique member names from assignee and doneBy fields
   issues.forEach((issue) => {
-    // Process assignee
-    if (issue.assignee && issue.assignee.trim() !== "") {
-      const assigneeNames = issue.assignee
-        .split(",")
-        .map((name) => name.trim());
+    if (issue.user && issue.user.trim() !== "") {
+      const userNames = issue.user.split(",").map((name) => name.trim());
 
-      assigneeNames.forEach((name) => {
+      userNames.forEach((name) => {
         if (name && name.trim() !== "") {
-          const assigneeName = name.trim();
+          const userName = name.trim();
 
-          if (assigneeName === "Dung Tran") {
-            return;
-          }
-
-          // Only process if the assignee is in our valid members list (or if using fallback)
-          if (validMemberNames.has(assigneeName)) {
-            if (!memberMap[assigneeName]) {
-              memberMap[assigneeName] = {
-                slug: formatValueToSlug(assigneeName),
-                name: assigneeName,
+          // Only process if the user is in our valid members list (or if using fallback)
+          if (validMemberNames.has(userName)) {
+            if (!memberMap[userName]) {
+              memberMap[userName] = {
+                slug: formatValueToSlug(userName),
+                name: userName,
                 issues: [],
                 projects: [],
-                role: getMemberRole(assigneeName),
+                role: getMemberRole(userName),
               };
             }
-            memberMap[assigneeName].issues.push(issue);
-            if (!memberMap[assigneeName].projects.includes(issue.projectName)) {
-              memberMap[assigneeName].projects.push(issue.projectName);
-            }
-          }
-        }
-      });
-    }
-
-    // Process doneBy (could be multiple names separated by semicolons)
-    if (issue.doneBy && issue.doneBy.trim() !== "") {
-      const doneByNames = issue.doneBy.split("; ").map((name) => name.trim());
-
-      doneByNames.forEach((name) => {
-        if (name && name.trim() !== "") {
-          const doneByName = name.trim();
-
-          if (doneByName === "Dung Tran") {
-            return;
-          }
-
-          // Only process if the doneBy name is in our valid members list (or if using fallback)
-          if (validMemberNames.has(doneByName)) {
-            if (!memberMap[doneByName]) {
-              memberMap[doneByName] = {
-                slug: formatValueToSlug(doneByName),
-                name: doneByName,
-                projects: [],
-                issues: [],
-                role: getMemberRole(doneByName),
-              };
-            }
-            // Only add the issue if it's not already in the array
-            if (!memberMap[doneByName].issues.includes(issue)) {
-              memberMap[doneByName].issues.push(issue);
-              if (!memberMap[doneByName].projects.includes(issue.projectName)) {
-                memberMap[doneByName].projects.push(issue.projectName);
+            if (!memberMap[userName].issues.includes(issue)) {
+              memberMap[userName].issues.push(issue);
+              if (!memberMap[userName].projects.includes(issue.projectName)) {
+                memberMap[userName].projects.push(issue.projectName);
               }
             }
           }
@@ -373,10 +331,6 @@ export function calculateMembers(
       triggeredByNames.forEach((name) => {
         if (name && name.trim() !== "") {
           const triggeredByName = name.trim();
-
-          if (triggeredByName === "Dung Tran") {
-            return;
-          }
 
           // Only process if the doneBy name is in our valid members list (or if using fallback)
           if (validMemberNames.has(triggeredByName)) {
@@ -401,35 +355,6 @@ export function calculateMembers(
           }
         }
       });
-    }
-
-    // Process author & author must be a tester
-    if (issue.author && issue.author.trim() !== "") {
-      const authorName = issue.author.trim();
-
-      if (authorName === "Dung Tran") {
-        return;
-      }
-
-      const testersNames = getTestersNames();
-      if (testersNames.includes(authorName)) {
-        if (!memberMap[authorName]) {
-          memberMap[authorName] = {
-            slug: formatValueToSlug(authorName),
-            name: authorName,
-            projects: [],
-            issues: [],
-            role: getMemberRole(authorName),
-          };
-        }
-        // Only add the issue if it's not already in the array
-        if (!memberMap[authorName].issues.includes(issue)) {
-          memberMap[authorName].issues.push(issue);
-          if (!memberMap[authorName].projects.includes(issue.projectName)) {
-            memberMap[authorName].projects.push(issue.projectName);
-          }
-        }
-      }
     }
   });
 
@@ -479,10 +404,7 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       estimatedTime: row["estimatedTime"] || 0,
       totalEstimatedTime: row["totalEstimatedTime"] || 0,
       spentTime: row["spentTime"] || 0,
-      totalSpentTime:
-        row["totalSpentTime"] && typeof row["totalSpentTime"] === "number"
-          ? row["totalSpentTime"] / 100
-          : 0,
+      totalSpentTime: row["spentTime"] || 0,
       percentDone: row["percentDone"] || 0,
       created: isValidDate(row["created"]) ? row["created"] : "",
       closed: isValidDate(row["closed"]) ? row["closed"] : "",
@@ -505,6 +427,7 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       triggeredBy: row["triggeredBy"],
       isWithoutSubtasks: true, // Default to true, will be calculated later
       projectSlug: "",
+      user: row["user"] || "",
     };
   });
 
