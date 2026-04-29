@@ -100,6 +100,16 @@ export const columns: ColumnDef<CombinedIssue>[] = [
     size: 500,
   },
   {
+    accessorKey: "project",
+    header: ({ column }) => (
+      <SortableHeader column={column} title={visibleColumns["project"]} />
+    ),
+    enableHiding: true,
+    cell: ({ row }) => (
+      <div className="truncate max-w-[500px]">{row.original.project}</div>
+    ),
+  },
+  {
     accessorKey: "tracker",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["tracker"]} />
@@ -179,7 +189,7 @@ export const columns: ColumnDef<CombinedIssue>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="text-right">{row.original.spentTime.toFixed(1)} hrs</div>
+      <div className="text-right">{row.original.spentTime} hrs</div>
     ),
   },
   {
@@ -297,7 +307,7 @@ export const columns: ColumnDef<CombinedIssue>[] = [
       const categories = row.original.issueCategories
         ? row.original.issueCategories.split("; ").map((c) => c.trim())
         : [];
-      return isBug && categories.includes("Post-release Issue");
+      return isBug && categories.includes("Post-Release Issue");
     },
   },
   {

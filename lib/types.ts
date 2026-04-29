@@ -1,5 +1,6 @@
 // CSV Parser interfaces
 export interface Issue {
+  uuid: string;
   id: number;
   tracker: string;
   status: string;

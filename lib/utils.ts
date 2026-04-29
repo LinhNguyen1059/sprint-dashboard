@@ -148,7 +148,6 @@ export function exportIssuesToCSV(
     "position",
     "storyPoints",
     "triggeredBy",
-    "private",
   ];
 
   const escape = (val: unknown): string => {
@@ -269,24 +268,35 @@ export const countBugsSupportedByMember = ({
 export const calculateOverviewRate = (data: Issue[], member: string) => {
   const issues = data.filter(
     (issue) =>
-      issue.tracker === "Tasks" ||
-      issue.tracker === "Task_Scr" ||
-      issue.tracker === "Suggestion" ||
-      issue.tracker === "Bug",
+      (issue.tracker === "Tasks" ||
+        issue.tracker === "Task_Scr" ||
+        issue.tracker === "Suggestion" ||
+        issue.tracker === "Bug") &&
+      issue.user === member,
   );
 
-  const assignedIssues = issues.filter(
-    (issue) => issue.assignee === member || issue.doneBy.includes(member),
+  const completeIssues = issues.filter(
+    (issue) =>
+      issue.status === "Closed" ||
+      issue.status === "Resolved" ||
+      issue.status === "Rejected",
   );
-  const closedIssues = assignedIssues.filter(
-    (issue) => issue.status === "Closed",
+  const inprogressIssues = issues.filter(
+    (issue) =>
+      issue.status === "Waiting" ||
+      issue.status === "Confirmed" ||
+      issue.status === "In Progress" ||
+      issue.status === "Feedback" ||
+      issue.status === "Reopened",
   );
 
-  const completion =
-    assignedIssues.length > 0
-      ? Math.round((closedIssues.length / assignedIssues.length) * 100)
-      : 0;
-  const inprogress = assignedIssues.length > 0 ? 100 - completion : 0;
+  const total = completeIssues.length + inprogressIssues.length;
+  if (total === 0) {
+    return { completion: 0, inprogress: 0 };
+  }
+
+  const completion = Math.round((completeIssues.length / total) * 100);
+  const inprogress = 100 - completion;
 
   return { completion, inprogress };
 };
@@ -321,22 +331,21 @@ export const calculateMemberData = (
       item.dueStatus === FeatureStatus.LATE,
   ).length;
 
-  const totalFixedBugs = issues.filter(
-    (issue) =>
-      issue.tracker === "Bug" &&
-      issue.status === "Closed" &&
-      (issue.assignee === member || issue.doneBy.includes(member)),
-  ).length;
+  const totalFixedBugs = new Set(
+    issues
+      .filter(
+        (issue) =>
+          issue.tracker === "Bug" &&
+          issue.status === "Closed" &&
+          issue.user === member,
+      )
+      .map((issue) => issue.id),
+  ).size;
 
   const totalSpentTime = issues.reduce((total, issue) => {
     if ("spentTime" in issue && typeof issue.spentTime === "number") {
       // Only count spentTime from rows where this member actually logged the time
-      const isInUser =
-        issue.user &&
-        issue.user
-          .split(",")
-          .map((n) => n.trim())
-          .includes(member);
+      const isInUser = issue.user === member;
       if (!isInUser) {
         return total;
       }

@@ -45,12 +45,12 @@ export default function MemberPage() {
 
   const completionRateClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
-    status: ["Closed"],
+    status: ["Closed", "Resolved", "Rejected"],
     user: memberData?.name,
   });
   const inProgressClick = applyOverviewFilter({
     tracker: ["Tasks", "Task_Scr", "Suggestion", "Bug"],
-    status: ["Waiting", "Confirmed", "In Progress"],
+    status: ["Waiting", "Confirmed", "In Progress", "Feedback", "Reopened"],
     user: memberData?.name,
   });
   const overdueClick = applyOverviewFilter({

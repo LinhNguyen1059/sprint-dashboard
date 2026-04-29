@@ -1,3 +1,6 @@
+import { v4 as uuidv4 } from "uuid";
+import { isValid } from "date-fns";
+
 import {
   CombinedIssue,
   FeatureStatus,
@@ -9,13 +12,7 @@ import {
   Feature,
 } from "./types";
 import { calculateMemberData, formatValueToSlug } from "./utils";
-import {
-  getDevelopers,
-  getMemberRole,
-  getMembers,
-  getTestersNames,
-} from "./teams";
-import { isValid } from "date-fns";
+import { getDevelopers, getMemberRole, getMembers } from "./teams";
 
 /**
  * Calculate feature status based on due date, closed date and status
@@ -83,19 +80,110 @@ function countBugs(issue: CombinedIssue): {
 }
 
 /**
+ * Accumulate metrics from a single leaf issue into its parent Feature.
+ */
+function accumulateIssueMetrics(issue: CombinedIssue, feature: Feature) {
+  const { critical, high, postRelease } = countBugs(issue);
+  feature.criticalBugs += critical;
+  feature.highBugs += high;
+  feature.postReleaseBugs += postRelease;
+
+  if (
+    (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
+    issue.dueStatus === FeatureStatus.LATE
+  ) {
+    feature.overdueTasks += 1;
+  }
+
+  if (
+    issue.status === "Closed" ||
+    issue.status === "Resolved" ||
+    issue.status === "Rejected"
+  ) {
+    feature.completion += 1;
+  }
+
+  if (
+    issue.status === "Waiting" ||
+    issue.status === "Confirmed" ||
+    issue.status === "In Progress" ||
+    issue.status === "Feedback" ||
+    issue.status === "Reopened"
+  ) {
+    feature.inProgress += 1;
+  }
+}
+
+/**
+ * Recursively walk the subtree rooted at `nodeId`, adding every non-Epic
+ * descendant to `feature.issues` so the issue table shows all branches and
+ * leaves. Metrics (bug counts, completion, etc.) are accumulated only on
+ * true leaf nodes (no children) to avoid double-counting.
+ *
+ * Cross-project children are included automatically because `childrenByParent`
+ * is built from the full dataset — no project filter is applied here.
+ *
+ * Handles any depth: Epic → Story → Suggestion → Task → …
+ */
+function collectLeafIssues(
+  nodeId: number,
+  childrenByParent: Map<number, CombinedIssue[]>,
+  feature: Feature,
+) {
+  const children = childrenByParent.get(nodeId);
+  if (!children || children.length === 0) return;
+
+  children.forEach((child) => {
+    if (child.tracker === "Epic") return; // Epics are always roots, never leaves
+
+    // Always add every non-Epic descendant so the issue table shows branches too
+    feature.issues.push(child);
+    // Accumulate metrics for every node so the counter matches the table row count
+    accumulateIssueMetrics(child, feature);
+
+    const grandchildren = childrenByParent.get(child.id);
+    if (grandchildren && grandchildren.length > 0) {
+      // Intermediate node — recurse deeper
+      collectLeafIssues(child.id, childrenByParent, feature);
+    }
+  });
+}
+
+/**
  * Process issues within a project and produce a feature-centric data model.
  *
- * Hierarchy: Epic (Feature) → Story → leaf issues (Task | Bug | Suggestion)
- * Bugs may also belong directly to a Feature (without a Story).
+ * The hierarchy is fully recursive and not limited to depth:
+ *   Epic → Story → Task/Bug/Suggestion
+ *   Epic → Bug/Task/Suggestion
+ *   Epic → Suggestion → Task
+ *   Epic → Story → Suggestion → Task → …
  *
- * All leaf issues are flattened into `feature.issues`; Stories are
- * intermediate routing nodes and do not appear in the output.
+ * Only leaf nodes (issues with no children in the dataset) are added to
+ * `feature.issues`. Intermediate nodes (Stories, Suggestions with children,
+ * etc.) are traversal-only and do not appear in the output.
+ *
+ * Child issues from other projects are included if their parent chain leads
+ * back to an Epic in this project.
+ *
+ * @param projectName Scope: only Epics belonging to this project are returned
+ * @param allIssues   Full issue set used for cross-project parent resolution
  */
-function processProjectIssues(projectIssues: CombinedIssue[]) {
-  // Build a Map of feature id → Feature for O(1) lookups
+function processProjectIssues(projectName: string, allIssues: CombinedIssue[]) {
+  // Build parent → direct children map from the full dataset (O(n))
+  const childrenByParent = new Map<number, CombinedIssue[]>();
+  allIssues.forEach((issue) => {
+    if (issue.parentTask === null) return;
+    const siblings = childrenByParent.get(issue.parentTask) ?? [];
+    siblings.push(issue);
+    childrenByParent.set(issue.parentTask, siblings);
+  });
+
+  // Build Feature objects for every Epic that belongs to this project
   const featureById = new Map<number, Feature>();
-  projectIssues
-    .filter((issue) => issue.tracker === "Epic")
+  allIssues
+    .filter(
+      (issue) => issue.tracker === "Epic" && issue.projectName === projectName,
+    )
     .forEach((epic) => {
       featureById.set(epic.id, {
         ...epic,
@@ -115,62 +203,16 @@ function processProjectIssues(projectIssues: CombinedIssue[]) {
       });
     });
 
-  // Build a Map of story id → parent feature id for O(1) story resolution
-  const storyFeatureId = new Map<number, number>();
-  projectIssues
-    .filter((issue) => issue.tracker === "Story")
-    .forEach((story) => {
-      if (story.parentTask && featureById.has(story.parentTask)) {
-        storyFeatureId.set(story.id, story.parentTask);
-      }
-    });
-
-  // Route each leaf issue to its feature and accumulate bug counts
-  projectIssues.forEach((issue) => {
-    if (issue.tracker === "Epic" || issue.tracker === "Story") return;
-    if (!issue.parentTask) return;
-
-    // Resolve: direct child of feature OR grandchild via story
-    const feature =
-      featureById.get(issue.parentTask) ??
-      featureById.get(storyFeatureId.get(issue.parentTask) ?? -1);
-
-    if (!feature) return;
-
-    feature.issues.push(issue);
-
-    const { critical, high, postRelease } = countBugs(issue);
-    feature.criticalBugs += critical;
-    feature.highBugs += high;
-    feature.postReleaseBugs += postRelease;
-
-    if (
-      (issue.tracker === "Tasks" || issue.tracker === "Task_Scr") &&
-      issue.dueStatus === FeatureStatus.LATE
-    ) {
-      feature.overdueTasks += 1;
-    }
-
-    if (
-      issue.status === "Closed" ||
-      issue.status === "Resolved" ||
-      issue.status === "Rejected"
-    ) {
-      feature.completion += 1;
-    }
-
-    if (
-      issue.status === "Waiting" ||
-      issue.status === "Confirmed" ||
-      issue.status === "In Progress" ||
-      issue.status === "Feedback" ||
-      issue.status === "Reopened"
-    ) {
-      feature.inProgress += 1;
-    }
+  // For each Feature, recursively collect all leaf descendants
+  featureById.forEach((feature, epicId) => {
+    collectLeafIssues(epicId, childrenByParent, feature);
   });
 
-  return { features: Array.from(featureById.values()) };
+  return {
+    features: Array.from(featureById.values()).filter(
+      (f) => f.issues.length > 0,
+    ),
+  };
 }
 
 /**
@@ -250,8 +292,10 @@ export function calculateProjects(issues: CombinedIssue[]): Project[] {
     const { totalMembers, totalDevs } =
       calculateMembersInProject(projectIssues);
 
-    // Process issues to extract features, stories and other tasks
-    const { features } = processProjectIssues(projectIssues);
+    // Process issues to extract features, stories and other tasks.
+    // Pass projectName so features are scoped to their Epic's project.
+    // allIssues is passed so cross-project child issues are also routed.
+    const { features } = processProjectIssues(projectName, issues);
 
     // Create the project structure
     const project: Project = {
@@ -383,6 +427,7 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
   // Convert parsed data to our CombinedIssue interface
   const issues: CombinedIssue[] = data.map((row) => {
     return {
+      uuid: uuidv4(),
       id: row["issueID"] || 0,
       tracker: row["tracker"] || "",
       status: row["status"] || "",

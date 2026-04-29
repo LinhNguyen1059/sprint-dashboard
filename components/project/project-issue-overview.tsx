@@ -27,14 +27,14 @@ export function ProjectIssueOverview({
 }: ProjectIssueOverviewProps) {
   const completionRate = useMemo(() => {
     if (!feature) return 0;
-    const totalIssues = feature.issues.length;
+    const totalIssues = feature.completion + feature.inProgress;
     if (totalIssues === 0) return 0;
     return Math.min(Math.round((feature.completion / totalIssues) * 100), 100);
   }, [feature]);
 
   const inProgressRate = useMemo(() => {
     if (!feature) return 0;
-    const totalIssues = feature.issues.length;
+    const totalIssues = feature.completion + feature.inProgress;
     if (totalIssues === 0) return 0;
     return Math.min(Math.round((feature.inProgress / totalIssues) * 100), 100);
   }, [feature]);

@@ -52,6 +52,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useDashboardStore } from "@/stores/dashboardStore";
+import { calculateMemberData } from "@/lib/utils";
 
 import { columns, visibleColumns } from "./member.utils";
 import { MultiSelectFilter } from "../MultiSelectFilter";
@@ -72,8 +73,23 @@ export function MemberTable() {
     pageSize: 100,
   });
 
+  const projectFilterValue = React.useMemo(() => {
+    const filter = columnFilters.find((f) => f.id === "projects");
+    return Array.isArray(filter?.value) ? (filter.value as string[]) : [];
+  }, [columnFilters]);
+
+  const derivedMembers = React.useMemo(() => {
+    if (projectFilterValue.length === 0) return members;
+    return members.map((member) => {
+      const filteredIssues = member.issues.filter((issue) =>
+        projectFilterValue.includes(issue.projectName),
+      );
+      return { ...member, ...calculateMemberData(filteredIssues, member.name) };
+    });
+  }, [members, projectFilterValue]);
+
   const table = useReactTable({
-    data: members,
+    data: derivedMembers,
     columns,
     state: {
       sorting,
@@ -111,11 +127,6 @@ export function MemberTable() {
     table.getColumn("role")?.getFilterValue() &&
     Array.isArray(table.getColumn("role")?.getFilterValue())
       ? (table.getColumn("role")?.getFilterValue() as string[])
-      : [];
-  const projectFilterValue =
-    table.getColumn("projects")?.getFilterValue() &&
-    Array.isArray(table.getColumn("projects")?.getFilterValue())
-      ? (table.getColumn("projects")?.getFilterValue() as string[])
       : [];
 
   if (isLoading) {

@@ -21,6 +21,7 @@ import { columns, getMultiFilterValue, getUniqueValues } from "./issue.utils";
 export function useIssueTable(issues: CombinedIssue[]) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
+      project: false,
       author: false,
       percentDone: false,
       created: false,
@@ -82,7 +83,7 @@ export function useIssueTable(issues: CombinedIssue[]) {
       columnFilters,
       pagination,
     },
-    getRowId: (row) => row.id.toString(),
+    getRowId: (row) => row.uuid,
     enableRowSelection: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

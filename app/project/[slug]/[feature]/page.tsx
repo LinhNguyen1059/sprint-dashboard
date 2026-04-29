@@ -84,10 +84,12 @@ export default function FeatureDetail() {
   const criticalBugsClick = applyOverviewFilter({
     tracker: ["Bug"],
     priority: ["Urgent", "Immediate"],
+    excludeIssueCategories: ["Post-Release Issue"],
   });
   const highBugsClick = applyOverviewFilter({
     tracker: ["Bug"],
     priority: ["High"],
+    excludeIssueCategories: ["Post-Release Issue"],
   });
   const postReleaseBugsClick = applyOverviewFilter({
     isPostReleaseBug: true,
