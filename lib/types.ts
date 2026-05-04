@@ -60,7 +60,6 @@ export interface Feature extends CombinedIssue {
 export interface Project {
   name: string;
   slug: string;
-  totalItems: number;
   totalMembers: number;
   totalDevs: number;
   features: Feature[];

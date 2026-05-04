@@ -184,28 +184,18 @@ export const useDashboardStore = create<DashboardState>()(
           );
           if (data && Array.isArray(data.reports)) {
             const allIssues = data.reports as unknown as CombinedIssue[];
-            const allProjectsData = calculateProjects(allIssues);
-            // When specific projects are selected, filter out unrelated project
-            // entries that only appear because they contain parent Epics/Stories.
-            // Match by name using the ApiProjectResponse names for selected IDs.
             const { filter, projects: apiProjects } = get();
-            const projectsData =
-              filter.projectIds.length > 0
-                ? (() => {
-                    const selectedNames = new Set(
-                      apiProjects
-                        .filter((p) => filter.projectIds.includes(p.id))
-                        .map((p) => p.name),
-                    );
-                    return allProjectsData.filter(
-                      (p) =>
-                        selectedNames.has(p.name) ||
-                        Array.from(selectedNames).some((name) =>
-                          p.name.includes(name),
-                        ),
-                    );
-                  })()
-                : allProjectsData;
+            const selectedProjectNames = Array.from(
+              new Set(
+                apiProjects
+                  .filter((p) => filter.projectIds.includes(p.id))
+                  .map((p) => p.name),
+              ),
+            );
+            const projectsData = calculateProjects(
+              allIssues,
+              selectedProjectNames,
+            );
             const members = calculateMembers(allIssues, TEAMS);
             set({
               reports: allIssues,

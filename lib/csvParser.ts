@@ -115,112 +115,6 @@ function accumulateIssueMetrics(issue: CombinedIssue, feature: Feature) {
 }
 
 /**
- * Recursively walk the subtree rooted at `nodeId`, adding every non-Epic
- * descendant to `feature.issues` so the issue table shows all branches and
- * leaves. Metrics (bug counts, completion, etc.) are accumulated only on
- * true leaf nodes (no children) to avoid double-counting.
- *
- * Cross-project children are included automatically because `childrenByParent`
- * is built from the full dataset — no project filter is applied here.
- *
- * Handles any depth: Epic → Story → Suggestion → Task → …
- */
-function collectLeafIssues(
-  nodeId: number,
-  childrenByParent: Map<number, CombinedIssue[]>,
-  feature: Feature,
-) {
-  const children = childrenByParent.get(nodeId);
-  if (!children || children.length === 0) return;
-
-  children.forEach((child) => {
-    if (child.tracker === "Epic") return; // Epics are always roots, never leaves
-
-    // Always add every non-Epic descendant so the issue table shows branches too
-    feature.issues.push(child);
-    // Accumulate metrics for every node so the counter matches the table row count
-    accumulateIssueMetrics(child, feature);
-
-    const grandchildren = childrenByParent.get(child.id);
-    if (grandchildren && grandchildren.length > 0) {
-      // Intermediate node — recurse deeper
-      collectLeafIssues(child.id, childrenByParent, feature);
-    }
-  });
-}
-
-/**
- * Process issues within a project and produce a feature-centric data model.
- *
- * The hierarchy is fully recursive and not limited to depth:
- *   Epic → Story → Task/Bug/Suggestion
- *   Epic → Bug/Task/Suggestion
- *   Epic → Suggestion → Task
- *   Epic → Story → Suggestion → Task → …
- *
- * Only leaf nodes (issues with no children in the dataset) are added to
- * `feature.issues`. Intermediate nodes (Stories, Suggestions with children,
- * etc.) are traversal-only and do not appear in the output.
- *
- * Child issues from other projects are included if their parent chain leads
- * back to an Epic in this project.
- *
- * @param projectName Scope: only Epics belonging to this project are returned
- * @param allIssues   Full issue set used for cross-project parent resolution
- */
-function processProjectIssues(projectName: string, allIssues: CombinedIssue[]) {
-  // Build parent → direct children map from the full dataset (O(n))
-  const childrenByParent = new Map<number, CombinedIssue[]>();
-  allIssues.forEach((issue) => {
-    if (issue.parentTask === null) return;
-    const siblings = childrenByParent.get(issue.parentTask) ?? [];
-    siblings.push(issue);
-    childrenByParent.set(issue.parentTask, siblings);
-  });
-
-  // Build Feature objects for every Epic that belongs to this project
-  const featureById = new Map<number, Feature>();
-  allIssues
-    .filter(
-      (issue) => issue.tracker === "Epic" && issue.projectName === projectName,
-    )
-    .forEach((epic) => {
-      featureById.set(epic.id, {
-        ...epic,
-        dueStatus: calculateFeatureStatus({
-          closedDate: epic.closed,
-          dueDate: epic.dueDate,
-          status: epic.status,
-        }),
-        slug: formatValueToSlug(epic.subject),
-        criticalBugs: 0,
-        highBugs: 0,
-        postReleaseBugs: 0,
-        completion: 0,
-        inProgress: 0,
-        overdueTasks: 0,
-        issues: [],
-      });
-    });
-
-  // For each Feature, recursively collect all leaf descendants
-  featureById.forEach((feature, epicId) => {
-    collectLeafIssues(epicId, childrenByParent, feature);
-  });
-
-  return {
-    features: Array.from(featureById.values()).filter(
-      (f) => f.issues.length > 0,
-    ),
-  };
-}
-
-/**
- * Calculate members in a project
- * @param issues Array of issues within a project
- * @returns Members in the project
- */
-/**
  * Calculate members in a project based on issue assignees
  * @param issues Array of issues within a project
  * @returns Object containing members and their counts
@@ -266,51 +160,134 @@ function calculateMembersInProject(issues: CombinedIssue[]) {
   };
 }
 
+const normalizeProjectName = (name: string) =>
+  String(name || "")
+    .replace(/^#/, "")
+    .trim();
+
 /**
  * Calculate projects from combined issues data
  * @param issues Array of combined issues with project info
  * @returns Array of projects grouped by project name
  */
-export function calculateProjects(issues: CombinedIssue[]): Project[] {
-  // Group issues by project
-  const issuesByProject: Record<string, CombinedIssue[]> = {};
-  issues.forEach((issue) => {
-    const projectName = issue.projectName;
-    if (!issuesByProject[projectName]) {
-      issuesByProject[projectName] = [];
+export function calculateProjects(
+  rawIssues: CombinedIssue[],
+  selectedProjects: string[],
+): Project[] {
+  const selectedProjectSet = new Set(
+    selectedProjects.map(normalizeProjectName),
+  );
+
+  // 1) Merge duplicated rows by issue id and sum spentTime
+  const mergedMap: Map<number, CombinedIssue> = new Map();
+
+  for (const issue of rawIssues) {
+    if (!issue?.id) continue;
+
+    const issueId = Number(issue.id);
+    const spentTime = Number(issue.spentTime || 0);
+
+    if (!mergedMap.has(issueId)) {
+      mergedMap.set(issueId, {
+        ...issue,
+        id: issueId,
+        parentTask: issue.parentTask === null ? null : Number(issue.parentTask),
+        spentTime,
+      });
+    } else {
+      const existing = mergedMap.get(issueId);
+      if (existing) {
+        existing.spentTime += spentTime;
+      }
     }
-    issuesByProject[projectName].push(issue);
-  });
-
-  // Process each project
-  const projects: Project[] = [];
-  for (const projectName in issuesByProject) {
-    const projectIssues = issuesByProject[projectName];
-    const projectSlug = formatValueToSlug(projectName);
-
-    // Count unique members (assignees) in this project
-    const { totalMembers, totalDevs } =
-      calculateMembersInProject(projectIssues);
-
-    // Process issues to extract features, stories and other tasks.
-    // Pass projectName so features are scoped to their Epic's project.
-    // allIssues is passed so cross-project child issues are also routed.
-    const { features } = processProjectIssues(projectName, issues);
-
-    // Create the project structure
-    const project: Project = {
-      name: projectName,
-      slug: projectSlug,
-      totalItems: projectIssues.length,
-      totalMembers: totalMembers,
-      totalDevs: totalDevs,
-      features: features,
-    };
-
-    projects.push(project);
   }
 
-  return projects;
+  const mergedIssues = [...mergedMap.values()];
+
+  // 2) Filter by selected projects
+  const projectIssues = mergedIssues.filter((issue) => {
+    const projectName = normalizeProjectName(issue.project);
+    return selectedProjectSet.has(projectName);
+  });
+
+  // 3) Index issues by parentTask
+  const childrenByParent: Map<number, CombinedIssue[]> = new Map();
+
+  for (const issue of projectIssues) {
+    if (issue.parentTask == null) continue;
+
+    const bucket = childrenByParent.get(issue.parentTask) ?? [];
+    bucket.push(issue);
+    childrenByParent.set(issue.parentTask, bucket);
+  }
+
+  // 4) Group issues by project
+  const issuesByProject: Map<string, CombinedIssue[]> = new Map();
+
+  for (const issue of projectIssues) {
+    const projectName = normalizeProjectName(issue.project);
+
+    const bucket = issuesByProject.get(projectName) ?? [];
+    bucket.push(issue);
+    issuesByProject.set(projectName, bucket);
+  }
+
+  // 5) Build project -> features -> all descendant issues
+  const result: Project[] = [];
+
+  for (const [projectName, issues] of issuesByProject.entries()) {
+    const epics = issues.filter((issue) => issue.tracker === "Epic");
+
+    const features = epics.map((epic) => {
+      const collected: CombinedIssue[] = [];
+      const visited = new Set<number>();
+      const queue = [...(childrenByParent.get(epic.id) ?? [])];
+
+      while (queue.length) {
+        const current = queue.shift();
+        if (!current || visited.has(current.id)) continue;
+
+        visited.add(current.id);
+        collected.push(current);
+
+        const children = childrenByParent.get(current.id) ?? [];
+        queue.push(...children);
+      }
+
+      const feature: Feature = {
+        ...epic,
+        dueStatus: calculateFeatureStatus({
+          closedDate: epic.closed,
+          dueDate: epic.dueDate,
+          status: epic.status,
+        }),
+        slug: formatValueToSlug(epic.subject),
+        criticalBugs: 0,
+        highBugs: 0,
+        postReleaseBugs: 0,
+        completion: 0,
+        inProgress: 0,
+        overdueTasks: 0,
+        issues: collected,
+      };
+
+      collected.forEach((issue) => accumulateIssueMetrics(issue, feature));
+
+      return feature;
+    });
+
+    const { totalMembers, totalDevs } = calculateMembersInProject(issues);
+
+    result.push({
+      name: projectName,
+      slug: formatValueToSlug(projectName),
+      totalMembers,
+      totalDevs,
+      features,
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -339,67 +316,65 @@ export function calculateMembers(
   // Collect all unique member names from assignee and doneBy fields
   issues.forEach((issue) => {
     if (issue.user && issue.user.trim() !== "") {
-      const userNames = issue.user.split(",").map((name) => name.trim());
+      const userName = issue.user.trim();
 
-      userNames.forEach((name) => {
-        if (name && name.trim() !== "") {
-          const userName = name.trim();
-
-          // Only process if the user is in our valid members list (or if using fallback)
-          if (validMemberNames.has(userName)) {
-            if (!memberMap[userName]) {
-              memberMap[userName] = {
-                slug: formatValueToSlug(userName),
-                name: userName,
-                issues: [],
-                projects: [],
-                role: getMemberRole(userName),
-              };
-            }
-            if (!memberMap[userName].issues.includes(issue)) {
-              memberMap[userName].issues.push(issue);
-              if (!memberMap[userName].projects.includes(issue.projectName)) {
-                memberMap[userName].projects.push(issue.projectName);
-              }
+      if (userName) {
+        // Only process if the user is in our valid members list (or if using fallback)
+        if (validMemberNames.has(userName)) {
+          if (!memberMap[userName]) {
+            memberMap[userName] = {
+              slug: formatValueToSlug(userName),
+              name: userName,
+              issues: [],
+              projects: [],
+              role: getMemberRole(userName),
+            };
+          }
+          if (!memberMap[userName].issues.some((i) => i.id === issue.id)) {
+            memberMap[userName].issues.push(issue);
+            if (!memberMap[userName].projects.includes(issue.projectName)) {
+              memberMap[userName].projects.push(issue.projectName);
             }
           }
         }
-      });
+      }
     }
 
     // Process triggeredBy (could be multiple names separated by commas)
-    if (issue.triggeredBy && issue.triggeredBy.trim() !== "") {
-      const triggeredByNames = issue.triggeredBy
-        .split(",")
-        .map((name) => name.trim());
-      triggeredByNames.forEach((name) => {
-        if (name && name.trim() !== "") {
-          const triggeredByName = name.trim();
+    // if (issue.triggeredBy && issue.triggeredBy.trim() !== "") {
+    //   const triggeredByNames = issue.triggeredBy
+    //     .split(",")
+    //     .map((name) => name.trim());
+    //   triggeredByNames.forEach((name) => {
+    //     if (name && name.trim() !== "") {
+    //       const triggeredByName = name.trim();
 
-          // Only process if the doneBy name is in our valid members list (or if using fallback)
-          if (validMemberNames.has(triggeredByName)) {
-            if (!memberMap[triggeredByName]) {
-              memberMap[triggeredByName] = {
-                slug: formatValueToSlug(triggeredByName),
-                name: triggeredByName,
-                projects: [],
-                issues: [],
-                role: getMemberRole(triggeredByName),
-              };
-            }
-            // Only add the issue if it's not already in the array
-            if (!memberMap[triggeredByName].issues.includes(issue)) {
-              memberMap[triggeredByName].issues.push(issue);
-              if (
-                !memberMap[triggeredByName].projects.includes(issue.projectName)
-              ) {
-                memberMap[triggeredByName].projects.push(issue.projectName);
-              }
-            }
-          }
-        }
-      });
-    }
+    //       // Only process if the doneBy name is in our valid members list (or if using fallback)
+    //       if (validMemberNames.has(triggeredByName)) {
+    //         if (!memberMap[triggeredByName]) {
+    //           memberMap[triggeredByName] = {
+    //             slug: formatValueToSlug(triggeredByName),
+    //             name: triggeredByName,
+    //             projects: [],
+    //             issues: [],
+    //             role: getMemberRole(triggeredByName),
+    //           };
+    //         }
+    //         // Only add the issue if it's not already in the array
+    //         if (
+    //           !memberMap[triggeredByName].issues.some((i) => i.id === issue.id)
+    //         ) {
+    //           memberMap[triggeredByName].issues.push(issue);
+    //           if (
+    //             !memberMap[triggeredByName].projects.includes(issue.projectName)
+    //           ) {
+    //             memberMap[triggeredByName].projects.push(issue.projectName);
+    //           }
+    //         }
+    //       }
+    //     }
+    //   });
+    // }
   });
 
   const memberData = Object.values(memberMap);
