@@ -328,7 +328,8 @@ export const calculateMemberData = (
   const overdueTasks = issues.filter(
     (item) =>
       (item.tracker === "Tasks" || item.tracker === "Task_Scr") &&
-      item.dueStatus === FeatureStatus.LATE,
+      item.dueStatus === FeatureStatus.LATE &&
+      item.user === member,
   ).length;
 
   const totalFixedBugs = new Set(

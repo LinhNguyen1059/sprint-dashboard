@@ -313,68 +313,38 @@ export function calculateMembers(
   // Create a map of member names to their stats
   const memberMap: Record<string, Member> = {};
 
-  // Collect all unique member names from assignee and doneBy fields
-  issues.forEach((issue) => {
-    if (issue.user && issue.user.trim() !== "") {
-      const userName = issue.user.trim();
-
-      if (userName) {
-        // Only process if the user is in our valid members list (or if using fallback)
-        if (validMemberNames.has(userName)) {
-          if (!memberMap[userName]) {
-            memberMap[userName] = {
-              slug: formatValueToSlug(userName),
-              name: userName,
-              issues: [],
-              projects: [],
-              role: getMemberRole(userName),
-            };
-          }
-          if (!memberMap[userName].issues.some((i) => i.id === issue.id)) {
-            memberMap[userName].issues.push(issue);
-            if (!memberMap[userName].projects.includes(issue.projectName)) {
-              memberMap[userName].projects.push(issue.projectName);
-            }
-          }
-        }
+  const addIssueToMember = (userName: string, issue: CombinedIssue) => {
+    if (!validMemberNames.has(userName)) return;
+    if (!memberMap[userName]) {
+      memberMap[userName] = {
+        slug: formatValueToSlug(userName),
+        name: userName,
+        issues: [],
+        projects: [],
+        role: getMemberRole(userName),
+      };
+    }
+    if (!memberMap[userName].issues.some((i) => i.id === issue.id)) {
+      memberMap[userName].issues.push(issue);
+      if (!memberMap[userName].projects.includes(issue.projectName)) {
+        memberMap[userName].projects.push(issue.projectName);
       }
     }
+  };
 
-    // Process triggeredBy (could be multiple names separated by commas)
-    // if (issue.triggeredBy && issue.triggeredBy.trim() !== "") {
-    //   const triggeredByNames = issue.triggeredBy
-    //     .split(",")
-    //     .map((name) => name.trim());
-    //   triggeredByNames.forEach((name) => {
-    //     if (name && name.trim() !== "") {
-    //       const triggeredByName = name.trim();
+  // First pass: add issues by user field so that each member's own time-log rows
+  // are always present before any triggeredBy rows for the same issue ID.
+  issues.forEach((issue) => {
+    if (issue.user && issue.user.trim() !== "") {
+      addIssueToMember(issue.user.trim(), issue);
+    }
+  });
 
-    //       // Only process if the doneBy name is in our valid members list (or if using fallback)
-    //       if (validMemberNames.has(triggeredByName)) {
-    //         if (!memberMap[triggeredByName]) {
-    //           memberMap[triggeredByName] = {
-    //             slug: formatValueToSlug(triggeredByName),
-    //             name: triggeredByName,
-    //             projects: [],
-    //             issues: [],
-    //             role: getMemberRole(triggeredByName),
-    //           };
-    //         }
-    //         // Only add the issue if it's not already in the array
-    //         if (
-    //           !memberMap[triggeredByName].issues.some((i) => i.id === issue.id)
-    //         ) {
-    //           memberMap[triggeredByName].issues.push(issue);
-    //           if (
-    //             !memberMap[triggeredByName].projects.includes(issue.projectName)
-    //           ) {
-    //             memberMap[triggeredByName].projects.push(issue.projectName);
-    //           }
-    //         }
-    //       }
-    //     }
-    //   });
-    // }
+  // Second pass: add issues triggered by member (only if not already added above).
+  issues.forEach((issue) => {
+    if (issue.triggeredBy && issue.triggeredBy.trim() !== "") {
+      addIssueToMember(issue.triggeredBy.trim(), issue);
+    }
   });
 
   const memberData = Object.values(memberMap);
