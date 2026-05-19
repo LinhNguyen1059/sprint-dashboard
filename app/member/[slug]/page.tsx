@@ -24,7 +24,9 @@ export default function MemberPage() {
   const params = useParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
-  const { memberData, handleExport } = useMemberData(slug as string);
+  const { memberData, handleExport, isExporting } = useMemberData(
+    slug as string,
+  );
 
   const {
     table,
@@ -108,8 +110,13 @@ export default function MemberPage() {
       <div className="space-y-2">
         <div className="flex items-center gap-2 w-full justify-between">
           <h1 className="text-2xl font-bold">{memberData.name}</h1>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <FileDown /> Export CSV
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            <FileDown /> {isExporting ? "Exporting…" : "Export"}
           </Button>
         </div>
       </div>

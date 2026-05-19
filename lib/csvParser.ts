@@ -18,21 +18,15 @@ import { getDevelopers, getMemberRole, getMembers } from "./teams";
  * Calculate feature status based on due date, closed date and status
  * @param dueDate Due date of the feature
  * @param closedDate Closed date of the feature
- * @param status Status of the feature
  * @returns Feature status
  */
 function calculateFeatureStatus({
   dueDate,
   closedDate,
-  status,
 }: {
   dueDate: string;
   closedDate: string;
-  status: string;
 }) {
-  if (status === "Closed") {
-    return FeatureStatus.ONTIME;
-  }
   if (dueDate && closedDate) {
     const due = new Date(dueDate);
     const closed = new Date(closedDate);
@@ -259,7 +253,6 @@ export function calculateProjects(
         dueStatus: calculateFeatureStatus({
           closedDate: epic.closed,
           dueDate: epic.dueDate,
-          status: epic.status,
         }),
         slug: formatValueToSlug(epic.subject),
         criticalBugs: 0,
@@ -412,7 +405,6 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       dueStatus: calculateFeatureStatus({
         closedDate: row["closed"],
         dueDate: row["dueDate"],
-        status: row["status"],
       }),
       triggeredBy: row["triggeredBy"],
       isWithoutSubtasks: true, // Default to true, will be calculated later

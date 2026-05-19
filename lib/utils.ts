@@ -186,6 +186,171 @@ export function exportIssuesToCSV(
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Exports dev score data to an Excel (.xlsx) file matching the Dev Team Score template.
+ *
+ * Left section (columns A–C, rows 1–10): scoring summary with auto-calculated formulas.
+ * Right section (columns E–L, from row 3): issue data. Columns J (Committed Point)
+ * and K (On-Time) are left blank for manual input; column L (Earned Point = J × K)
+ * is pre-filled with a formula.
+ *
+ * @param issues  Issues to display in the data section (pre-filtered to the member).
+ * @param member  Developer name used to count critical/high bugs triggered by them.
+ * @param filename  Output filename (defaults to `dev-score-<member>.xlsx`).
+ */
+export async function exportDevScoreToXLSX(
+  issues: CombinedIssue[],
+  member: string,
+  filename = `dev-score-${member}.xlsx`,
+) {
+  if (!issues.length) return;
+
+  const XLSX = await import("xlsx");
+
+  const criticalBugs = countBugsByPriority({
+    member,
+    issues,
+    priorities: ["Urgent", "Immediate"],
+  });
+  const highBugs = countBugsByPriority({
+    member,
+    issues,
+    priorities: ["High"],
+  });
+
+  const taskIssues = issues.filter((issue) =>
+    ["Tasks", "Task_Scr", "Suggestion"].includes(issue.tracker),
+  );
+
+  // At least 10 rows to cover the scoring section; otherwise fit exactly to the data
+  const totalRows = Math.max(10, taskIssues.length + 2);
+
+  const formatHrs = (val: number): string => `${val} hrs`;
+
+  const calcOnTime = (issue: CombinedIssue): number => {
+    if (!issue.dueDate) return 1;
+    const due = new Date(issue.dueDate);
+    const close = issue.closed ? new Date(issue.closed) : new Date();
+    due.setHours(0, 0, 0, 0);
+    close.setHours(0, 0, 0, 0);
+    const daysLate = Math.ceil(
+      (close.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysLate <= 0) return 1;
+    if (daysLate <= 2) return 0.8;
+    if (daysLate <= 4) return 0.5;
+    if (daysLate <= 7) return 0.3;
+    return 0;
+  };
+
+  // Scoring section: rows 1–10, columns A–C
+  // null in column B means the cell will be replaced with a formula
+  const scoringRows: (string | number | null)[][] = [
+    ["Total Earned Point", null, ""],
+    ["Critical Bugs", criticalBugs, ""],
+    ["High Bugs", highBugs, ""],
+    ["Bug Density", null, ""],
+    ["Quality Score", null, ""],
+    ["Max Team Point", 10, ""],
+    ["Delivery Score", null, ""],
+    ["Contribution/Effort Score\n(from PM/Leader)", 0, ""],
+    ["Delivery Score", null, ""],
+    ["Total Score", null, ""],
+  ];
+
+  // Build array-of-arrays: 12 columns (A–L), totalRows rows
+  const aoa: (string | number | null)[][] = [];
+
+  for (let r = 1; r <= totalRows; r++) {
+    const sc = r <= 10 ? scoringRows[r - 1] : ["", "", ""];
+    const issueIdx = r - 3; // issues[0] starts at Excel row 3
+    const iss =
+      issueIdx >= 0 && issueIdx < taskIssues.length
+        ? taskIssues[issueIdx]
+        : null;
+
+    // Row 2 is the header row for the right section
+    const isHeaderRow = r === 2;
+
+    aoa.push([
+      sc[0] ?? "", // A – scoring label
+      sc[1] as string | number | null, // B – scoring value (formulas patched below)
+      sc[2] ?? "", // C – source indicator
+      "", // D – spacer
+      isHeaderRow ? "" : (iss?.id ?? ""), // E – issue id
+      isHeaderRow ? "Subject" : (iss?.subject ?? ""), // F
+      isHeaderRow ? "Parent task subject" : (iss?.parentTaskSubject ?? ""), // G
+      isHeaderRow ? "Tracker" : (iss?.tracker ?? ""), // H
+      isHeaderRow
+        ? "Total time spent"
+        : iss
+          ? formatHrs(iss.totalSpentTime)
+          : "", // I
+      isHeaderRow ? "Due date" : (iss?.dueDate ?? ""), // J – due date
+      isHeaderRow ? "Close date" : (iss?.closed ?? ""), // K – close date
+      isHeaderRow ? "Committed Point" : 0, // L – user fills in
+      isHeaderRow ? "On-Time" : iss ? calcOnTime(iss) : "", // M – auto-calculated
+      isHeaderRow ? "Earned Point" : "", // N – formula patched below
+    ]);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!ref"] = `A1:N${totalRows}`;
+
+  // ── Scoring formulas ──────────────────────────────────────────────────────
+  ws["B1"] = { t: "n", f: `SUM(N3:N${totalRows})`, v: 0 };
+  ws["B4"] = { t: "n", f: "(B2*3)+(B3*1)/B1", v: 0 };
+  // _xlfn. prefix required by Excel for newer functions
+  ws["B5"] = {
+    t: "n",
+    f: "_xlfn.IFS(B4<=0.2,100,B4<=0.4,90,B4<=0.7,80,B4<=1,70,B4<=1.5,60,B4>1.5,50)",
+    v: 0,
+  };
+  ws["B7"] = { t: "n", f: "(B1/B6)*100", v: 0 };
+  ws["B9"] = { t: "n", f: "(B1/B6)*100", v: 0 };
+  ws["B10"] = { t: "n", f: "B5*0.4+B7*0.4+B8*0.2", v: 0 };
+
+  // ── Earned Point formula for every data row ───────────────────────────────
+  for (let r = 3; r <= totalRows; r++) {
+    ws[`N${r}`] = { t: "n", f: `M${r}*L${r}`, v: 0 };
+  }
+
+  // ── Column widths ─────────────────────────────────────────────────────────
+  ws["!cols"] = [
+    { wch: 40 }, // A
+    { wch: 14 }, // B
+    { wch: 14 }, // C
+    { wch: 5 }, // D
+    { wch: 10 }, // E – id
+    { wch: 55 }, // F – subject
+    { wch: 40 }, // G – parent task subject
+    { wch: 12 }, // H – tracker
+    { wch: 14 }, // I – total time spent
+    { wch: 12 }, // J – due date
+    { wch: 12 }, // K – close date
+    { wch: 16 }, // L – committed point
+    { wch: 10 }, // M – on-time
+    { wch: 14 }, // N – earned point
+  ];
+
+  // ── Add "Team Input" label above L column (Committed Point) ───────────────
+  ws["L1"] = { t: "s", v: "Team Input" };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "A");
+
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export const countBugsByPriority = ({
   member,
   issues,

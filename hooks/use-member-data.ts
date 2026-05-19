@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useDashboardStore } from "@/stores/dashboardStore";
-import { exportIssuesToCSV } from "@/lib/utils";
+import { exportDevScoreToXLSX } from "@/lib/utils";
 import { isTester } from "@/lib/teams";
 
 /**
@@ -17,37 +17,17 @@ export function useMemberData(slug: string) {
     return isTester(memberData?.name || "");
   }, [memberData]);
 
-  const handleExport = useCallback(() => {
-    if (!memberData) return;
+  const [isExporting, setIsExporting] = useState(false);
 
-    const overviewRows = [
-      { label: "Completion Rate", value: memberData.completion },
-      { label: "In Progress Rate", value: memberData.inprogress },
-      { label: "Overdue Tasks", value: memberData.overdueTasks },
-      ...(isTesterMember
-        ? [
-            { label: "Total Found Bugs", value: memberData.totalFoundBugs },
-            {
-              label: "Total Confirmed Bugs",
-              value: memberData.totalConfirmedBugs,
-            },
-          ]
-        : [
-            {
-              label: "Total Created Bugs",
-              value: memberData.totalCreatedBugs,
-            },
-            { label: "Total Fixed Bugs", value: memberData.totalFixedBugs },
-          ]),
-      { label: "Total Spent Time", value: memberData.totalSpentTime },
-    ];
+  const handleExport = useCallback(async () => {
+    if (!memberData || isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportDevScoreToXLSX(memberData.issues, memberData.name);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [memberData, isExporting]);
 
-    exportIssuesToCSV(
-      memberData.issues,
-      `${memberData.name}.csv`,
-      overviewRows,
-    );
-  }, [memberData, isTesterMember]);
-
-  return { memberData, isTesterMember, handleExport };
+  return { memberData, isTesterMember, handleExport, isExporting };
 }
