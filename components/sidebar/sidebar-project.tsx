@@ -68,9 +68,7 @@ export function SidebarProject() {
   const onValueChange = (values: ApiProjectResponse[]) => {
     const newProjectIds = values.map((v) => v.id);
     setFilterStates("projectIds", newProjectIds);
-    if (newProjectIds.length > 1) {
-      setFilterStates("sprintIds", []);
-    }
+    setFilterStates("sprintIds", []);
   };
 
   return (
