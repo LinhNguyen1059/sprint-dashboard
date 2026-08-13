@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { CombinedIssue } from "@/lib/types";
 import {
   bugTrackerUrl,
@@ -27,6 +28,15 @@ export function getUniqueValues<T>(data: T[], key: keyof T): string[] {
     Boolean,
   );
 }
+
+type IssueColumnsOptions = {
+  pointEntryMode?: boolean;
+  committedPointsByIssueUuid?: Record<string, number | undefined>;
+  onCommittedPointChange?: (
+    issueUuid: string,
+    value: number | undefined,
+  ) => void;
+};
 
 // Define a reusable component for sortable headers
 export const SortableHeader = ({
@@ -385,3 +395,60 @@ export const columns: ColumnDef<CombinedIssue>[] = [
     },
   },
 ];
+
+export function getIssueColumns({
+  pointEntryMode = false,
+  committedPointsByIssueUuid = {},
+  onCommittedPointChange,
+}: IssueColumnsOptions = {}): ColumnDef<CombinedIssue>[] {
+  if (!pointEntryMode) {
+    return columns;
+  }
+
+  const statusColumnIndex = columns.findIndex(
+    (column) => "accessorKey" in column && column.accessorKey === "status",
+  );
+  const committedPointColumn: ColumnDef<CombinedIssue> = {
+    accessorKey: "committedPoint",
+    header: () => <span>Committed Point</span>,
+    enableHiding: false,
+    cell: ({ row }) => {
+      const value = committedPointsByIssueUuid[row.original.uuid];
+      return (
+        <div className="min-w-32">
+          <Input
+            type="number"
+            min={0}
+            step="any"
+            inputMode="decimal"
+            value={value ?? ""}
+            onChange={(event) => {
+              const rawValue = event.currentTarget.value;
+              if (!onCommittedPointChange) return;
+              if (rawValue === "") {
+                onCommittedPointChange(row.original.uuid, undefined);
+                return;
+              }
+              const nextValue = Number(rawValue);
+              if (Number.isFinite(nextValue) && nextValue >= 0) {
+                onCommittedPointChange(row.original.uuid, nextValue);
+              }
+            }}
+            aria-label={`Committed Point for ${row.original.subject}`}
+            className="h-8"
+          />
+        </div>
+      );
+    },
+  };
+
+  if (statusColumnIndex === -1) {
+    return [...columns, committedPointColumn];
+  }
+
+  return [
+    ...columns.slice(0, statusColumnIndex),
+    committedPointColumn,
+    ...columns.slice(statusColumnIndex),
+  ];
+}

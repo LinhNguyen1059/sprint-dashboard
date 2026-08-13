@@ -16,9 +16,25 @@ import {
 
 import { CombinedIssue } from "@/lib/types";
 
-import { columns, getMultiFilterValue, getUniqueValues } from "./issue.utils";
+import {
+  getIssueColumns,
+  getMultiFilterValue,
+  getUniqueValues,
+} from "./issue.utils";
 
-export function useIssueTable(issues: CombinedIssue[]) {
+type UseIssueTableOptions = {
+  pointEntryMode?: boolean;
+  committedPointsByIssueUuid?: Record<string, number | undefined>;
+  onCommittedPointChange?: (
+    issueUuid: string,
+    value: number | undefined,
+  ) => void;
+};
+
+export function useIssueTable(
+  issues: CombinedIssue[],
+  options: UseIssueTableOptions = {},
+) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
       project: false,
@@ -73,6 +89,20 @@ export function useIssueTable(issues: CombinedIssue[]) {
       .filter(Boolean);
     return Array.from(new Set(individualCategories));
   }, [issues]);
+
+  const columns = React.useMemo(
+    () =>
+      getIssueColumns({
+        pointEntryMode: options.pointEntryMode,
+        committedPointsByIssueUuid: options.committedPointsByIssueUuid,
+        onCommittedPointChange: options.onCommittedPointChange,
+      }),
+    [
+      options.pointEntryMode,
+      options.committedPointsByIssueUuid,
+      options.onCommittedPointChange,
+    ],
+  );
 
   const table = useReactTable({
     data: issues,

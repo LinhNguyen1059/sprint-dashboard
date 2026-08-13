@@ -40,7 +40,6 @@ import {
 import { visibleColumns } from "@/lib/utils";
 
 import { UseIssueTableReturn } from ".";
-import { columns } from "./issue.utils";
 
 export function IssueTable({
   table,
@@ -181,7 +180,7 @@ export function IssueTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={table.getAllLeafColumns().length}
                   className="h-24 text-center"
                 >
                   No results.

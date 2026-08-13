@@ -201,6 +201,7 @@ export function exportIssuesToCSV(
 export async function exportDevScoreToXLSX(
   issues: CombinedIssue[],
   member: string,
+  committedPointsByIssueUuid: Record<string, number | undefined> = {},
   filename = `dev-score-${member}.xlsx`,
 ) {
   if (!issues.length) return;
@@ -219,7 +220,9 @@ export async function exportDevScoreToXLSX(
   });
 
   const taskIssues = issues.filter((issue) =>
-    ["Tasks", "Task_Scr", "Suggestion"].includes(issue.tracker),
+    ["Task", "Tasks", "Task_Src", "Task_Scr", "Suggestion"].includes(
+      issue.tracker,
+    ),
   );
 
   // At least 10 rows to cover the scoring section; otherwise fit exactly to the data
@@ -288,7 +291,9 @@ export async function exportDevScoreToXLSX(
           : "", // I
       isHeaderRow ? "Due date" : (iss?.dueDate ?? ""), // J – due date
       isHeaderRow ? "Close date" : (iss?.closed ?? ""), // K – close date
-      isHeaderRow ? "Committed Point" : 0, // L – user fills in
+      isHeaderRow
+        ? "Committed Point"
+        : (committedPointsByIssueUuid[iss?.uuid ?? ""] ?? 0), // L – user fills in
       isHeaderRow ? "On-Time" : iss ? calcOnTime(iss) : "", // M – auto-calculated
       isHeaderRow ? "Earned Point" : "", // N – formula patched below
     ]);

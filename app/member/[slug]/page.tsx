@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FileDown } from "lucide-react";
@@ -20,12 +21,40 @@ import { useMemberData } from "@/hooks/use-member-data";
 import { excludedIssueCategories } from "@/lib/utils";
 import { FeatureStatus } from "@/lib/types";
 
+const POINT_ENTRY_TRACKERS = new Set([
+  "Task",
+  "Tasks",
+  "Task_Src",
+  "Task_Scr",
+  "Suggestion",
+]);
+
 export default function MemberPage() {
   const params = useParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const memberSlug = slug as string;
 
-  const { memberData, handleExport, isExporting } = useMemberData(
-    slug as string,
+  const {
+    memberData,
+    handleExport,
+    isExporting,
+    pointMode,
+    setPointMode,
+    committedPoints,
+    setCommittedPoint,
+  } = useMemberData(memberSlug);
+
+  const pointEntryIssues = useMemo(() => {
+    const issues = memberData?.issues ?? [];
+    if (!pointMode) return issues;
+    return issues.filter((issue) => POINT_ENTRY_TRACKERS.has(issue.tracker));
+  }, [memberData?.issues, pointMode]);
+
+  const handleCommittedPointChange = useCallback(
+    (issueUuid: string, value: number | undefined) => {
+      setCommittedPoint(memberSlug, issueUuid, value);
+    },
+    [memberSlug, setCommittedPoint],
   );
 
   const {
@@ -41,7 +70,11 @@ export default function MemberPage() {
     applyOverviewFilter,
     columnFilters,
     setColumnFilter,
-  } = useIssueTable(memberData?.issues ?? []);
+  } = useIssueTable(pointEntryIssues ?? [], {
+    pointEntryMode: pointMode,
+    committedPointsByIssueUuid: committedPoints,
+    onCommittedPointChange: handleCommittedPointChange,
+  });
 
   usePageTitle(memberData?.name ?? "Member");
 
@@ -110,14 +143,23 @@ export default function MemberPage() {
       <div className="space-y-2">
         <div className="flex items-center gap-2 w-full justify-between">
           <h1 className="text-2xl font-bold">{memberData.name}</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            <FileDown /> {isExporting ? "Exporting…" : "Export"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={pointMode ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setPointMode(memberSlug, !pointMode)}
+            >
+              {pointMode ? "Hide points" : "Add point"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              <FileDown /> {isExporting ? "Exporting…" : "Export"}
+            </Button>
+          </div>
         </div>
       </div>
 
