@@ -410,6 +410,7 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       isWithoutSubtasks: true, // Default to true, will be calculated later
       projectSlug: "",
       user: row["user"] || "",
+      aiAssistance: row["aiAssistance"] || "",
     };
   });
 

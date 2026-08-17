@@ -18,16 +18,12 @@ import { IssueTable, useIssueTable } from "@/components/issue";
 import { MemberIssueOverview } from "@/components/member";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useMemberData } from "@/hooks/use-member-data";
-import { excludedIssueCategories } from "@/lib/utils";
+import {
+  calculateDevScoreOverview,
+  excludedIssueCategories,
+  isPointEntryTracker,
+} from "@/lib/utils";
 import { FeatureStatus } from "@/lib/types";
-
-const POINT_ENTRY_TRACKERS = new Set([
-  "Task",
-  "Tasks",
-  "Task_Src",
-  "Task_Scr",
-  "Suggestion",
-]);
 
 export default function MemberPage() {
   const params = useParams();
@@ -47,7 +43,7 @@ export default function MemberPage() {
   const pointEntryIssues = useMemo(() => {
     const issues = memberData?.issues ?? [];
     if (!pointMode) return issues;
-    return issues.filter((issue) => POINT_ENTRY_TRACKERS.has(issue.tracker));
+    return issues.filter((issue) => isPointEntryTracker(issue.tracker));
   }, [memberData?.issues, pointMode]);
 
   const handleCommittedPointChange = useCallback(
@@ -113,6 +109,21 @@ export default function MemberPage() {
     doneBy: memberData?.name,
   });
 
+  const pointOverview = useMemo(() => {
+    if (!memberData) {
+      return calculateDevScoreOverview({
+        issues: [],
+        member: "",
+        committedPointsByIssueUuid: {},
+      });
+    }
+    return calculateDevScoreOverview({
+      issues: memberData.issues,
+      member: memberData.name,
+      committedPointsByIssueUuid: committedPoints,
+    });
+  }, [committedPoints, memberData]);
+
   if (!memberData?.issues?.length) {
     return (
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 lg:px-6 px-4">
@@ -173,6 +184,7 @@ export default function MemberPage() {
           totalFoundBugsClick,
           totalConfirmedBugsClick,
         }}
+        pointOverview={pointMode ? pointOverview : undefined}
       />
 
       <IssueTable

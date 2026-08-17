@@ -38,6 +38,7 @@ export interface Issue {
   triggeredBy: string;
   isWithoutSubtasks: boolean;
   user: string;
+  aiAssistance: string;
 }
 
 export interface CombinedIssue extends Issue {
@@ -172,6 +173,7 @@ export interface ApiReportResponse {
   private: string;
   storyPoints: string;
   sprint: string;
+  aiAssistance?: string;
 }
 export interface IssueOverviewData {
   completion: number;

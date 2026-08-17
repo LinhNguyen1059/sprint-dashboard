@@ -147,6 +147,16 @@ export const columns: ColumnDef<CombinedIssue>[] = [
     },
   },
   {
+    accessorKey: "aiAssistance",
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        title={visibleColumns["aiAssistance"]}
+      />
+    ),
+    cell: ({ row }) => row.original.aiAssistance || "-",
+  },
+  {
     accessorKey: "status",
     header: ({ column }) => (
       <SortableHeader column={column} title={visibleColumns["status"]} />

@@ -97,6 +97,7 @@ export const visibleColumns = {
   ontimePercent: "% Tasks On Time",
   triggeredBy: "Triggered By",
   projectName: "Project name",
+  aiAssistance: "AI Assistance",
 };
 
 export const bugTrackerUrl = "https://bugtracker.i3international.com/issues";
@@ -104,6 +105,123 @@ export const bugTrackerUrl = "https://bugtracker.i3international.com/issues";
 export interface OverviewSummary {
   label: string;
   value: string | number;
+}
+
+export const pointEntryTrackers = [
+  "Task",
+  "Tasks",
+  "Task_Src",
+  "Task_Scr",
+  "Suggestion",
+] as const;
+
+export const isPointEntryTracker = (tracker: string) => {
+  return pointEntryTrackers.includes(
+    tracker as (typeof pointEntryTrackers)[number],
+  );
+};
+
+export interface DevScoreOverview {
+  totalEarnedPoint: number;
+  criticalBugs: number;
+  highBugs: number;
+  bugDensity: number;
+  qualityScore: number;
+  maxTeamPoint: number;
+  deliveryScore: number;
+  contributionEffortScore: number;
+  finalDeliveryScore: number;
+  totalScore: number;
+}
+
+const roundTo2 = (value: number) => Number(value.toFixed(2));
+
+const calculateQualityScore = (bugDensity: number): number => {
+  if (bugDensity <= 0.2) return 100;
+  if (bugDensity <= 0.4) return 90;
+  if (bugDensity <= 0.7) return 80;
+  if (bugDensity <= 1) return 70;
+  if (bugDensity <= 1.5) return 60;
+  return 50;
+};
+
+export function calculateDevScoreOverview({
+  issues,
+  member,
+  committedPointsByIssueUuid = {},
+  maxTeamPoint = 10,
+  contributionEffortScore = 0,
+}: {
+  issues: CombinedIssue[];
+  member: string;
+  committedPointsByIssueUuid?: Record<string, number | undefined>;
+  maxTeamPoint?: number;
+  contributionEffortScore?: number;
+}): DevScoreOverview {
+  const taskIssues = issues.filter((issue) =>
+    isPointEntryTracker(issue.tracker),
+  );
+
+  const totalEarnedPointRaw = taskIssues.reduce((total, issue) => {
+    const committedPoint = committedPointsByIssueUuid[issue.uuid];
+    if (!Number.isFinite(committedPoint) || (committedPoint ?? 0) < 0) {
+      return total;
+    }
+    return total + (committedPoint as number) * calculateOnTimeFactor(issue);
+  }, 0);
+
+  const criticalBugs = countBugsByPriority({
+    member,
+    issues,
+    priorities: ["Urgent", "Immediate"],
+  });
+  const highBugs = countBugsByPriority({
+    member,
+    issues,
+    priorities: ["High"],
+  });
+
+  const totalEarnedPoint = roundTo2(totalEarnedPointRaw);
+  const bugDensityRaw =
+    totalEarnedPointRaw > 0
+      ? (criticalBugs * 3 + highBugs) / totalEarnedPointRaw
+      : 0;
+  const qualityScore = calculateQualityScore(bugDensityRaw);
+  const deliveryScoreRaw =
+    maxTeamPoint > 0 ? (totalEarnedPointRaw / maxTeamPoint) * 100 : 0;
+  const totalScoreRaw =
+    qualityScore * 0.4 + deliveryScoreRaw * 0.4 + contributionEffortScore * 0.2;
+
+  return {
+    totalEarnedPoint,
+    criticalBugs,
+    highBugs,
+    bugDensity: roundTo2(bugDensityRaw),
+    qualityScore: roundTo2(qualityScore),
+    maxTeamPoint: roundTo2(maxTeamPoint),
+    deliveryScore: roundTo2(deliveryScoreRaw),
+    contributionEffortScore: roundTo2(contributionEffortScore),
+    finalDeliveryScore: roundTo2(deliveryScoreRaw),
+    totalScore: roundTo2(totalScoreRaw),
+  };
+}
+
+export function calculateOnTimeFactor(
+  issue: Pick<Issue, "dueDate" | "closed">,
+) {
+  if (!issue.dueDate) return 1;
+  const due = new Date(issue.dueDate);
+  const close = issue.closed ? new Date(issue.closed) : new Date();
+  due.setHours(0, 0, 0, 0);
+  close.setHours(0, 0, 0, 0);
+  const daysLate = Math.ceil(
+    (close.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (daysLate <= 0) return 1;
+  if (daysLate <= 2) return 0.8;
+  if (daysLate <= 4) return 0.5;
+  if (daysLate <= 7) return 0.3;
+  return 0;
 }
 
 export function exportIssuesToCSV(
@@ -148,6 +266,7 @@ export function exportIssuesToCSV(
     "position",
     "storyPoints",
     "triggeredBy",
+    "aiAssistance",
   ];
 
   const escape = (val: unknown): string => {
@@ -189,9 +308,9 @@ export function exportIssuesToCSV(
 /**
  * Exports dev score data to an Excel (.xlsx) file matching the Dev Team Score template.
  *
- * Left section (columns A–C, rows 1–10): scoring summary with auto-calculated formulas.
- * Right section (columns E–L, from row 3): issue data. Columns J (Committed Point)
- * and K (On-Time) are left blank for manual input; column L (Earned Point = J × K)
+ * Left section (columns A–C, rows 1–9): scoring summary with auto-calculated formulas.
+ * Right section (columns E–O, from row 3): issue data. Columns M (Committed Point)
+ * and N (On-Time) are left blank for manual input; column O (Earned Point = M × N)
  * is pre-filled with a formula.
  *
  * @param issues  Issues to display in the data section (pre-filtered to the member).
@@ -220,33 +339,15 @@ export async function exportDevScoreToXLSX(
   });
 
   const taskIssues = issues.filter((issue) =>
-    ["Task", "Tasks", "Task_Src", "Task_Scr", "Suggestion"].includes(
-      issue.tracker,
-    ),
+    isPointEntryTracker(issue.tracker),
   );
 
-  // At least 10 rows to cover the scoring section; otherwise fit exactly to the data
-  const totalRows = Math.max(10, taskIssues.length + 2);
+  // At least 9 rows to cover the scoring section; otherwise fit exactly to the data
+  const totalRows = Math.max(9, taskIssues.length + 2);
 
   const formatHrs = (val: number): string => `${val} hrs`;
 
-  const calcOnTime = (issue: CombinedIssue): number => {
-    if (!issue.dueDate) return 1;
-    const due = new Date(issue.dueDate);
-    const close = issue.closed ? new Date(issue.closed) : new Date();
-    due.setHours(0, 0, 0, 0);
-    close.setHours(0, 0, 0, 0);
-    const daysLate = Math.ceil(
-      (close.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    if (daysLate <= 0) return 1;
-    if (daysLate <= 2) return 0.8;
-    if (daysLate <= 4) return 0.5;
-    if (daysLate <= 7) return 0.3;
-    return 0;
-  };
-
-  // Scoring section: rows 1–10, columns A–C
+  // Scoring section: rows 1–9, columns A–C
   // null in column B means the cell will be replaced with a formula
   const scoringRows: (string | number | null)[][] = [
     ["Total Earned Point", null, ""],
@@ -257,15 +358,14 @@ export async function exportDevScoreToXLSX(
     ["Max Team Point", 10, ""],
     ["Delivery Score", null, ""],
     ["Contribution/Effort Score\n(from PM/Leader)", 0, ""],
-    ["Delivery Score", null, ""],
     ["Total Score", null, ""],
   ];
 
-  // Build array-of-arrays: 12 columns (A–L), totalRows rows
+  // Build array-of-arrays: 15 columns (A–O), totalRows rows
   const aoa: (string | number | null)[][] = [];
 
   for (let r = 1; r <= totalRows; r++) {
-    const sc = r <= 10 ? scoringRows[r - 1] : ["", "", ""];
+    const sc = r <= 9 ? scoringRows[r - 1] : ["", "", ""];
     const issueIdx = r - 3; // issues[0] starts at Excel row 3
     const iss =
       issueIdx >= 0 && issueIdx < taskIssues.length
@@ -284,40 +384,40 @@ export async function exportDevScoreToXLSX(
       isHeaderRow ? "Subject" : (iss?.subject ?? ""), // F
       isHeaderRow ? "Parent task subject" : (iss?.parentTaskSubject ?? ""), // G
       isHeaderRow ? "Tracker" : (iss?.tracker ?? ""), // H
+      isHeaderRow ? "Ai Assistance" : (iss?.aiAssistance ?? ""), // I
       isHeaderRow
         ? "Total time spent"
         : iss
           ? formatHrs(iss.totalSpentTime)
-          : "", // I
-      isHeaderRow ? "Due date" : (iss?.dueDate ?? ""), // J – due date
-      isHeaderRow ? "Close date" : (iss?.closed ?? ""), // K – close date
+          : "", // J
+      isHeaderRow ? "Due date" : (iss?.dueDate ?? ""), // K – due date
+      isHeaderRow ? "Close date" : (iss?.closed ?? ""), // L – close date
       isHeaderRow
         ? "Committed Point"
-        : (committedPointsByIssueUuid[iss?.uuid ?? ""] ?? 0), // L – user fills in
-      isHeaderRow ? "On-Time" : iss ? calcOnTime(iss) : "", // M – auto-calculated
-      isHeaderRow ? "Earned Point" : "", // N – formula patched below
+        : (committedPointsByIssueUuid[iss?.uuid ?? ""] ?? 0), // M – user fills in
+      isHeaderRow ? "On-Time" : iss ? calculateOnTimeFactor(iss) : "", // N – auto-calculated
+      isHeaderRow ? "Earned Point" : "", // O – formula patched below
     ]);
   }
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!ref"] = `A1:N${totalRows}`;
+  ws["!ref"] = `A1:O${totalRows}`;
 
   // ── Scoring formulas ──────────────────────────────────────────────────────
-  ws["B1"] = { t: "n", f: `SUM(N3:N${totalRows})`, v: 0 };
-  ws["B4"] = { t: "n", f: "(B2*3)+(B3*1)/B1", v: 0 };
+  ws["B1"] = { t: "n", f: `SUM(O3:O${totalRows})`, v: 0 };
+  ws["B4"] = { t: "n", f: "IF(B1=0,0,((B2*3)+(B3*1))/B1)", v: 0 };
   // _xlfn. prefix required by Excel for newer functions
   ws["B5"] = {
     t: "n",
     f: "_xlfn.IFS(B4<=0.2,100,B4<=0.4,90,B4<=0.7,80,B4<=1,70,B4<=1.5,60,B4>1.5,50)",
     v: 0,
   };
-  ws["B7"] = { t: "n", f: "(B1/B6)*100", v: 0 };
-  ws["B9"] = { t: "n", f: "(B1/B6)*100", v: 0 };
-  ws["B10"] = { t: "n", f: "B5*0.4+B7*0.4+B8*0.2", v: 0 };
+  ws["B7"] = { t: "n", f: "IF(B6=0,0,(B1/B6)*100)", v: 0 };
+  ws["B9"] = { t: "n", f: "B5*0.4+B7*0.4+B8*0.2", v: 0 };
 
   // ── Earned Point formula for every data row ───────────────────────────────
   for (let r = 3; r <= totalRows; r++) {
-    ws[`N${r}`] = { t: "n", f: `M${r}*L${r}`, v: 0 };
+    ws[`O${r}`] = { t: "n", f: `N${r}*M${r}`, v: 0 };
   }
 
   // ── Column widths ─────────────────────────────────────────────────────────
@@ -330,16 +430,17 @@ export async function exportDevScoreToXLSX(
     { wch: 55 }, // F – subject
     { wch: 40 }, // G – parent task subject
     { wch: 12 }, // H – tracker
-    { wch: 14 }, // I – total time spent
-    { wch: 12 }, // J – due date
-    { wch: 12 }, // K – close date
-    { wch: 16 }, // L – committed point
-    { wch: 10 }, // M – on-time
-    { wch: 14 }, // N – earned point
+    { wch: 14 }, // I – ai assistance
+    { wch: 14 }, // J – total time spent
+    { wch: 12 }, // K – due date
+    { wch: 12 }, // L – close date
+    { wch: 16 }, // M – committed point
+    { wch: 10 }, // N – on-time
+    { wch: 14 }, // O – earned point
   ];
 
-  // ── Add "Team Input" label above L column (Committed Point) ───────────────
-  ws["L1"] = { t: "s", v: "Team Input" };
+  // ── Add "Team Input" label above M column (Committed Point) ───────────────
+  ws["M1"] = { t: "s", v: "Team Input" };
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "A");
