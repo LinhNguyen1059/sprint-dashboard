@@ -149,13 +149,11 @@ export function calculateDevScoreOverview({
   issues,
   member,
   committedPointsByIssueUuid = {},
-  maxTeamPoint = 10,
   contributionEffortScore = 0,
 }: {
   issues: CombinedIssue[];
   member: string;
   committedPointsByIssueUuid?: Record<string, number | undefined>;
-  maxTeamPoint?: number;
   contributionEffortScore?: number;
 }): DevScoreOverview {
   const taskIssues = issues.filter((issue) =>
@@ -182,6 +180,7 @@ export function calculateDevScoreOverview({
   });
 
   const totalEarnedPoint = roundTo2(totalEarnedPointRaw);
+  const maxTeamPoint = totalEarnedPoint;
   const bugDensityRaw =
     totalEarnedPointRaw > 0
       ? (criticalBugs * 3 + highBugs) / totalEarnedPointRaw
@@ -355,7 +354,7 @@ export async function exportDevScoreToXLSX(
     ["High Bugs", highBugs, ""],
     ["Bug Density", null, ""],
     ["Quality Score", null, ""],
-    ["Max Team Point", 10, ""],
+    ["Max Team Point", null, ""],
     ["Delivery Score", null, ""],
     ["Contribution/Effort Score\n(from PM/Leader)", 0, ""],
     ["Total Score", null, ""],
@@ -412,6 +411,7 @@ export async function exportDevScoreToXLSX(
     f: "_xlfn.IFS(B4<=0.2,100,B4<=0.4,90,B4<=0.7,80,B4<=1,70,B4<=1.5,60,B4>1.5,50)",
     v: 0,
   };
+  ws["B6"] = { t: "n", f: "B1", v: 0 };
   ws["B7"] = { t: "n", f: "IF(B6=0,0,(B1/B6)*100)", v: 0 };
   ws["B9"] = { t: "n", f: "B5*0.4+B7*0.4+B8*0.2", v: 0 };
 
