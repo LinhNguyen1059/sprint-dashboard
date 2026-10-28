@@ -411,6 +411,7 @@ export function parseReportData(data: ApiReportResponse[]): CombinedIssue[] {
       projectSlug: "",
       user: row["user"] || "",
       aiAssistance: row["aiAssistance"] || "",
+      estPoint: row["estPoint"] || 0,
     };
   });
 

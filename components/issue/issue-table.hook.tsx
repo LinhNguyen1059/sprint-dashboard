@@ -22,19 +22,7 @@ import {
   getUniqueValues,
 } from "./issue.utils";
 
-type UseIssueTableOptions = {
-  pointEntryMode?: boolean;
-  committedPointsByIssueUuid?: Record<string, number | undefined>;
-  onCommittedPointChange?: (
-    issueUuid: string,
-    value: number | undefined,
-  ) => void;
-};
-
-export function useIssueTable(
-  issues: CombinedIssue[],
-  options: UseIssueTableOptions = {},
-) {
+export function useIssueTable(issues: CombinedIssue[]) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
       project: false,
@@ -90,19 +78,7 @@ export function useIssueTable(
     return Array.from(new Set(individualCategories));
   }, [issues]);
 
-  const columns = React.useMemo(
-    () =>
-      getIssueColumns({
-        pointEntryMode: options.pointEntryMode,
-        committedPointsByIssueUuid: options.committedPointsByIssueUuid,
-        onCommittedPointChange: options.onCommittedPointChange,
-      }),
-    [
-      options.pointEntryMode,
-      options.committedPointsByIssueUuid,
-      options.onCommittedPointChange,
-    ],
-  );
+  const columns = React.useMemo(() => getIssueColumns(), []);
 
   const table = useReactTable({
     data: issues,

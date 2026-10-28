@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FileDown } from "lucide-react";
@@ -18,11 +17,7 @@ import { IssueTable, useIssueTable } from "@/components/issue";
 import { MemberIssueOverview } from "@/components/member";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useMemberData } from "@/hooks/use-member-data";
-import {
-  calculateDevScoreOverview,
-  excludedIssueCategories,
-  isPointEntryTracker,
-} from "@/lib/utils";
+import { excludedIssueCategories } from "@/lib/utils";
 import { FeatureStatus } from "@/lib/types";
 
 export default function MemberPage() {
@@ -30,28 +25,7 @@ export default function MemberPage() {
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const memberSlug = slug as string;
 
-  const {
-    memberData,
-    handleExport,
-    isExporting,
-    pointMode,
-    setPointMode,
-    committedPoints,
-    setCommittedPoint,
-  } = useMemberData(memberSlug);
-
-  const pointEntryIssues = useMemo(() => {
-    const issues = memberData?.issues ?? [];
-    if (!pointMode) return issues;
-    return issues.filter((issue) => isPointEntryTracker(issue.tracker));
-  }, [memberData?.issues, pointMode]);
-
-  const handleCommittedPointChange = useCallback(
-    (issueUuid: string, value: number | undefined) => {
-      setCommittedPoint(memberSlug, issueUuid, value);
-    },
-    [memberSlug, setCommittedPoint],
-  );
+  const { memberData, handleExport, isExporting } = useMemberData(memberSlug);
 
   const {
     table,
@@ -66,11 +40,7 @@ export default function MemberPage() {
     applyOverviewFilter,
     columnFilters,
     setColumnFilter,
-  } = useIssueTable(pointEntryIssues ?? [], {
-    pointEntryMode: pointMode,
-    committedPointsByIssueUuid: committedPoints,
-    onCommittedPointChange: handleCommittedPointChange,
-  });
+  } = useIssueTable(memberData?.issues ?? []);
 
   usePageTitle(memberData?.name ?? "Member");
 
@@ -109,21 +79,6 @@ export default function MemberPage() {
     doneBy: memberData?.name,
   });
 
-  const pointOverview = useMemo(() => {
-    if (!memberData) {
-      return calculateDevScoreOverview({
-        issues: [],
-        member: "",
-        committedPointsByIssueUuid: {},
-      });
-    }
-    return calculateDevScoreOverview({
-      issues: memberData.issues,
-      member: memberData.name,
-      committedPointsByIssueUuid: committedPoints,
-    });
-  }, [committedPoints, memberData]);
-
   if (!memberData?.issues?.length) {
     return (
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 lg:px-6 px-4">
@@ -156,13 +111,6 @@ export default function MemberPage() {
           <h1 className="text-2xl font-bold">{memberData.name}</h1>
           <div className="flex items-center gap-2">
             <Button
-              variant={pointMode ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setPointMode(memberSlug, !pointMode)}
-            >
-              {pointMode ? "Hide points" : "Add point"}
-            </Button>
-            <Button
               variant="outline"
               size="sm"
               onClick={handleExport}
@@ -184,7 +132,6 @@ export default function MemberPage() {
           totalFoundBugsClick,
           totalConfirmedBugsClick,
         }}
-        pointOverview={pointMode ? pointOverview : undefined}
       />
 
       <IssueTable

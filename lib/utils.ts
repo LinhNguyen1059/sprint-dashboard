@@ -148,12 +148,10 @@ const calculateQualityScore = (bugDensity: number): number => {
 export function calculateDevScoreOverview({
   issues,
   member,
-  committedPointsByIssueUuid = {},
   contributionEffortScore = 0,
 }: {
   issues: CombinedIssue[];
   member: string;
-  committedPointsByIssueUuid?: Record<string, number | undefined>;
   contributionEffortScore?: number;
 }): DevScoreOverview {
   const taskIssues = issues.filter((issue) =>
@@ -161,11 +159,11 @@ export function calculateDevScoreOverview({
   );
 
   const totalEarnedPointRaw = taskIssues.reduce((total, issue) => {
-    const committedPoint = committedPointsByIssueUuid[issue.uuid];
-    if (!Number.isFinite(committedPoint) || (committedPoint ?? 0) < 0) {
+    const estPoint = Number(issue.estPoint);
+    if (!Number.isFinite(estPoint) || estPoint < 0) {
       return total;
     }
-    return total + (committedPoint as number) * calculateOnTimeFactor(issue);
+    return total + estPoint * calculateOnTimeFactor(issue);
   }, 0);
 
   const criticalBugs = countBugsByPriority({
@@ -308,9 +306,9 @@ export function exportIssuesToCSV(
  * Exports dev score data to an Excel (.xlsx) file matching the Dev Team Score template.
  *
  * Left section (columns A–C, rows 1–9): scoring summary with auto-calculated formulas.
- * Right section (columns E–O, from row 3): issue data. Columns M (Committed Point)
- * and N (On-Time) are left blank for manual input; column O (Earned Point = M × N)
- * is pre-filled with a formula.
+ * Right section (columns E–O, from row 3): issue data. Column M (Est. Point) is taken
+ * from the issue's `estPoint`, column N (On-Time) is auto-calculated, and column O
+ * (Earned Point = M × N) is pre-filled with a formula.
  *
  * @param issues  Issues to display in the data section (pre-filtered to the member).
  * @param member  Developer name used to count critical/high bugs triggered by them.
@@ -319,7 +317,6 @@ export function exportIssuesToCSV(
 export async function exportDevScoreToXLSX(
   issues: CombinedIssue[],
   member: string,
-  committedPointsByIssueUuid: Record<string, number | undefined> = {},
   filename = `dev-score-${member}.xlsx`,
 ) {
   if (!issues.length) return;
@@ -391,9 +388,7 @@ export async function exportDevScoreToXLSX(
           : "", // J
       isHeaderRow ? "Due date" : (iss?.dueDate ?? ""), // K – due date
       isHeaderRow ? "Close date" : (iss?.closed ?? ""), // L – close date
-      isHeaderRow
-        ? "Committed Point"
-        : (committedPointsByIssueUuid[iss?.uuid ?? ""] ?? 0), // M – user fills in
+      isHeaderRow ? "Est. Point" : iss ? Number(iss.estPoint) || 0 : "", // M – from API estPoint
       isHeaderRow ? "On-Time" : iss ? calculateOnTimeFactor(iss) : "", // N – auto-calculated
       isHeaderRow ? "Earned Point" : "", // O – formula patched below
     ]);
@@ -434,13 +429,10 @@ export async function exportDevScoreToXLSX(
     { wch: 14 }, // J – total time spent
     { wch: 12 }, // K – due date
     { wch: 12 }, // L – close date
-    { wch: 16 }, // M – committed point
+    { wch: 16 }, // M – est. point
     { wch: 10 }, // N – on-time
     { wch: 14 }, // O – earned point
   ];
-
-  // ── Add "Team Input" label above M column (Committed Point) ───────────────
-  ws["M1"] = { t: "s", v: "Team Input" };
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "A");

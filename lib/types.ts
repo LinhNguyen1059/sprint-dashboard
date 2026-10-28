@@ -39,6 +39,7 @@ export interface Issue {
   isWithoutSubtasks: boolean;
   user: string;
   aiAssistance: string;
+  estPoint: number;
 }
 
 export interface CombinedIssue extends Issue {
@@ -174,6 +175,7 @@ export interface ApiReportResponse {
   storyPoints: string;
   sprint: string;
   aiAssistance?: string;
+  estPoint: number;
 }
 export interface IssueOverviewData {
   completion: number;
